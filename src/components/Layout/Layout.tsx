@@ -57,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="user-info">
             <FaIcons.FaUserCircle className="user-avatar" />
             <div className="user-details">
-              <span className="user-name">{user?.name || 'User'}</span>
+              <span className="user-name">{user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
               <span className="user-role">{user?.role || 'Role'}</span>
             </div>
           </div>
