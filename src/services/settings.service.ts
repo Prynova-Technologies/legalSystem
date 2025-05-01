@@ -73,7 +73,6 @@ export class SettingsService {
       const emailSent = await emailService.sendEmail({
         to: testEmail,
         subject: 'Test Email from Law Practice Management System',
-        text: 'This is a test email to verify your email configuration.',
         html: '<p>This is a test email to verify your email configuration.</p>'
       });
       

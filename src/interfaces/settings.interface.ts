@@ -21,6 +21,16 @@ export interface ISettings extends Document {
     sendDocumentNotifications: boolean;
     sendAppointmentReminders: boolean;
   };
+  billingRates?: Array<{
+    name: string;
+    rate: number;
+    description?: string;
+  }>;
+  documentTypes?: Array<{
+    name: string;
+    category?: string;
+    description?: string;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }

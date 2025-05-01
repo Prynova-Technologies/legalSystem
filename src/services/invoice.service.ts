@@ -176,12 +176,14 @@ export class InvoiceService {
         method: string;
         reference?: string;
         notes?: string;
+        recordedBy: string;
       } = {
         amount: paymentData.amount,
         date: paymentData.date || new Date(),
         method: paymentData.method,
         reference: paymentData.reference,
-        notes: paymentData.notes
+        notes: paymentData.notes,
+        recordedBy: paymentData.recordedBy
       };
       
       invoice.payments.push(payment);
@@ -194,7 +196,7 @@ export class InvoiceService {
       if (invoice.balance <= 0) {
         invoice.status = InvoiceStatus.PAID;
       } else if (invoice.status === InvoiceStatus.DRAFT) {
-        invoice.status = InvoiceStatus.UNPAID;
+        invoice.status = InvoiceStatus.SENT;
       }
       
       await invoice.save();
@@ -220,8 +222,11 @@ export class InvoiceService {
         throw new Error('Only draft invoices can be sent');
       }
       
-      invoice.status = InvoiceStatus.UNPAID;
-      invoice.sentDate = new Date();
+      invoice.status = InvoiceStatus.SENT;
+      
+      // Add sentDate to the invoice
+      const invoiceDoc = invoice as any;
+      invoiceDoc.sentDate = new Date();
       
       await invoice.save();
       
@@ -258,7 +263,7 @@ export class InvoiceService {
       
       // Get total outstanding balance
       const outstandingBalance = await Invoice.aggregate([
-        { $match: { status: InvoiceStatus.UNPAID, isDeleted: false } },
+        { $match: { status: InvoiceStatus.SENT, isDeleted: false } },
         { $group: { _id: null, total: { $sum: '$balance' } } }
       ]);
       
