@@ -6,6 +6,10 @@ import DatePicker from './DatePicker';
 import DetailView, { DetailItem, DetailSection } from './DetailView';
 import DataTable from './DataTable';
 import StatusBadge from './StatusBadge';
+import Modal from './Modal';
+import CalendarModal from './CalendarModal';
+import DashboardCharts from './DashboardCharts';
+import DataForm, { FormField, FormSection } from './DataForm';
 
 export {
   Button,
@@ -16,5 +20,11 @@ export {
   DetailItem,
   DetailSection,
   DataTable,
-  StatusBadge
+  StatusBadge,
+  Modal,
+  CalendarModal,
+  DashboardCharts,
+  DataForm
 };
+
+export type { FormField, FormSection };

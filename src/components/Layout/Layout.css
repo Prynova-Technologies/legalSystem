@@ -11,6 +11,11 @@
   flex-direction: column;
   padding: 1rem;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
 }
 
 .sidebar-header {
@@ -105,7 +110,66 @@
 
 .main-content {
   flex: 1;
-  padding: 2rem;
+  display: flex;
+  flex-direction: column;
   background-color: #f8f9fa;
+  overflow-y: auto;
+  margin-left: 250px; /* Same as sidebar width */
+}
+
+.top-bar {
+  background-color: #ffffff;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.search-container {
+  flex: 1;
+  max-width: 500px;
+  margin-right: 2rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.notification-icon {
+  position: relative;
+  color: #666;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-container {
+  padding: 2rem;
+  flex: 1;
   overflow-y: auto;
 }

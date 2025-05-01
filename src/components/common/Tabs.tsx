@@ -13,6 +13,7 @@ interface TabsProps {
   onTabChange: (tabId: string) => void;
   className?: string;
   variant?: 'default' | 'boxed' | 'pills';
+  orientation?: 'horizontal' | 'vertical';
 }
 
 const Tabs: React.FC<TabsProps> = ({

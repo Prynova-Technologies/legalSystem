@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchClients, setFilters, clearFilters } from '../store/slices/clientsSlice';
+import { DataTable, Button, StatusBadge } from '../components/common';
+import * as FaIcons from 'react-icons/fa';
+import '../components/common/CommonStyles.css';
 
 const Clients: React.FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { clients, isLoading, error, filters } = useSelector((state: RootState) => state.clients);
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
 
@@ -143,53 +147,54 @@ const Clients: React.FC = () => {
         <div className="loading-indicator">Loading clients...</div>
       ) : error ? (
         <div className="error-message">{error}</div>
-      ) : filteredClients.length === 0 ? (
-        <div className="empty-state">
-          <p>No clients found. Try adjusting your filters or create a new client.</p>
-        </div>
       ) : (
-        <div className="clients-table-container">
-          <table className="clients-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Intake Date</th>
-                <th>KYC Status</th>
-                <th>Conflict Check</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.map(client => (
-                <tr key={client.id}>
-                  <td>{getClientName(client)}</td>
-                  <td>{client.type === 'individual' ? 'Individual' : 'Organization'}</td>
-                  <td>{client.contactInfo.email}</td>
-                  <td>{client.contactInfo.phone}</td>
-                  <td>{formatDate(client.intakeDate)}</td>
-                  <td>
-                    <span className={`status-badge ${client.kycVerified ? 'status-verified' : 'status-unverified'}`}>
-                      {client.kycVerified ? 'Verified' : 'Unverified'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-${client.conflictCheckStatus}`}>
-                      {client.conflictCheckStatus}
-                    </span>
-                  </td>
-                  <td>
-                    <Link to={`/clients/${client.id}`} className="view-link">
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={[
+            { header: 'Name', accessor: row => getClientName(row), sortable: true },
+            { 
+              header: 'Type', 
+              accessor: row => row.type === 'individual' ? 'Individual' : 'Organization',
+              sortable: true 
+            },
+            { header: 'Email', accessor: row => row.contactInfo.email, sortable: true },
+            { header: 'Phone', accessor: row => row.contactInfo.phone },
+            { header: 'Intake Date', accessor: row => formatDate(row.intakeDate), sortable: true },
+            { 
+              header: 'KYC Status', 
+              accessor: row => (
+                <StatusBadge 
+                  status={row.kycVerified ? 'Verified' : 'Unverified'} 
+                />
+              )
+            },
+            { 
+              header: 'Conflict Check', 
+              accessor: row => (
+                <StatusBadge 
+                  status={row.conflictCheckStatus} 
+                />
+              )
+            },
+            { 
+              header: 'Actions', 
+              accessor: row => (
+                <Button 
+                  variant="secondary" 
+                  size="small"
+                  onClick={() => navigate(`/clients/${row.id}`)}
+                >
+                  <FaIcons.FaEye /> View
+                </Button>
+              )
+            }
+          ]}
+          data={filteredClients}
+          emptyMessage="No clients found. Try adjusting your filters or create a new client."
+          onRowClick={client => navigate(`/clients/${client.id}`)}
+          pagination={true}
+          pageSize={10}
+          striped={true}
+        />
       )}
     </div>
   );

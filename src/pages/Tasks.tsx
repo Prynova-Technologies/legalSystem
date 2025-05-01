@@ -3,12 +3,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchTasks, setFilters, clearFilters, updateTask } from '../store/slices/tasksSlice';
+import { CalendarModal } from '../components/common';
+import * as FaIcons from 'react-icons/fa';
 
 const Tasks: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { tasks, isLoading, error, filters } = useSelector((state: RootState) => state.tasks);
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTasks() as any);
@@ -146,10 +149,23 @@ const Tasks: React.FC = () => {
     <div className="tasks-container">
       <div className="page-header">
         <h1>Tasks</h1>
-        <Link to="/tasks/new" className="btn btn-primary">
-          New Task
-        </Link>
+        <div className="page-header-actions">
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setShowCalendar(true)}
+          >
+            <FaIcons.FaCalendarAlt /> View Calendar
+          </button>
+          <Link to="/tasks/new" className="btn btn-primary">
+            New Task
+          </Link>
+        </div>
       </div>
+      
+      <CalendarModal 
+        isOpen={showCalendar} 
+        onClose={() => setShowCalendar(false)} 
+      />
 
       <div className="filters-section">
         <form onSubmit={handleSearch} className="search-form">

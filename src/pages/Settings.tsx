@@ -466,26 +466,29 @@ const Settings: React.FC = () => {
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : (
-        <>
-          <Tabs
-            tabs={[
-              { id: 'security', label: 'Security', icon: <FaIcons.FaShieldAlt /> },
-              ...(isAdmin ? [{ id: 'user-management', label: 'User Management', icon: <FaIcons.FaUsers /> }] : []),
-              ...(isAdmin ? [{ id: 'system', label: 'System', icon: <FaIcons.FaCogs /> }] : []),
-              { id: 'preferences', label: 'Preferences', icon: <FaIcons.FaUserCog /> }
-            ]}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            variant="default"
-          />
-          
-          <div className="tab-content">
-            {activeTab === 'security' && renderSecurityTab()}
-            {activeTab === 'user-management' && isAdmin && renderUserManagementTab()}
-            {activeTab === 'system' && isAdmin && renderSystemTab()}
-            {activeTab === 'preferences' && renderPreferencesTab()}
+        <div className="settings-layout">
+          <div className="settings-tabs-container">
+            <Tabs
+              tabs={[
+                { id: 'security', label: 'Security', icon: <FaIcons.FaShieldAlt /> },
+                ...(isAdmin ? [{ id: 'user-management', label: 'User Management', icon: <FaIcons.FaUsers /> }] : []),
+                ...(isAdmin ? [{ id: 'system', label: 'System', icon: <FaIcons.FaCogs /> }] : []),
+                { id: 'preferences', label: 'Preferences', icon: <FaIcons.FaUserCog /> }
+              ]}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              variant="default"
+            />
           </div>
-        </>
+          <div className="settings-content">
+            <div className="tab-content">
+              {activeTab === 'security' && renderSecurityTab()}
+              {activeTab === 'user-management' && isAdmin && renderUserManagementTab()}
+              {activeTab === 'system' && isAdmin && renderSystemTab()}
+              {activeTab === 'preferences' && renderPreferencesTab()}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

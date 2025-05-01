@@ -53,10 +53,7 @@ const App: React.FC = () => {
           path="/clients/:id"
           element={isAuthenticated ? <Layout><ClientDetail /></Layout> : <Navigate to="/login" replace />}
         />
-        <Route
-          path="/calendar"
-          element={isAuthenticated ? <Layout><Calendar /></Layout> : <Navigate to="/login" replace />}
-        />
+        {/* Calendar functionality moved to Tasks page */}
         <Route
           path="/tasks"
           element={isAuthenticated ? <Layout><Tasks /></Layout> : <Navigate to="/login" replace />}

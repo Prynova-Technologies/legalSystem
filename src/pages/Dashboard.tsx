@@ -5,6 +5,7 @@ import { fetchCases } from '../store/slices/casesSlice';
 import { fetchTasks } from '../store/slices/tasksSlice';
 import { fetchEvents } from '../store/slices/calendarSlice';
 import { fetchTimeEntries } from '../store/slices/billingSlice';
+import { DashboardCharts } from '../components/common';
 
 const Dashboard: React.FC = () => {
   const dispatch = useDispatch();
@@ -144,6 +145,8 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </div>
+
+          <DashboardCharts />
         </>
       )}
     </div>
