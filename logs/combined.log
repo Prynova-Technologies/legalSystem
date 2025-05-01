@@ -1,0 +1,100 @@
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 13:42:57"}
+{"level":"error","message":"Error connecting to MongoDB: connect ECONNREFUSED 127.0.0.1:27017, connect ECONNREFUSED ::1:27017","service":"law-firm-api","timestamp":"2025-04-30 13:43:27"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 13:49:01"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 13:49:02"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 13:55:26"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 13:55:26"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 14:09:20"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 14:09:21"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 14:58:27"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 14:58:27"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 15:00:07"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 15:00:08"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 15:06:07"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 15:06:08"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 15:21:12"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 15:21:12"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 16:06:10"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 16:06:10"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 16:11:35"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 16:11:36"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 16:27:25"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 16:27:25"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 17:19:04"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 17:19:04"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 17:21:46"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 17:21:46"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 17:55:05"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 17:55:05"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 18:24:15"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:24:16"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 18:28:36"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:28:37"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 18:29:34"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:29:34"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 18:33:21"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:33:21"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 18:35:19"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:35:19"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 18:36:51"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:36:52"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 18:38:05"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:38:05"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:41:07"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 18:41:08"}
+{"level":"warn","message":"MongoDB disconnected","service":"law-firm-api","timestamp":"2025-04-30 18:41:12"}
+{"level":"warn","message":"MongoDB disconnected","service":"law-firm-api","timestamp":"2025-04-30 18:41:12"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 19:10:59"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 19:10:59"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 19:12:15"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 19:12:15"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 19:13:40"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 19:13:40"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 19:43:59"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 19:43:59"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 20:05:59"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 20:06:00"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 20:07:35"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 20:07:35"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 20:09:05"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 20:09:06"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 20:10:26"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 20:10:26"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 20:19:11"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 20:19:11"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 20:46:08"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 20:46:09"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 21:12:44"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 21:12:44"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 21:31:58"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 21:31:58"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 22:17:51"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 22:17:51"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 22:19:21"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 22:19:21"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-04-30 23:28:47"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-04-30 23:28:47"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-04-30 23:28:47"}
+{"level":"warn","message":"MongoDB disconnected","service":"law-firm-api","timestamp":"2025-05-01 01:48:05"}
+{"level":"warn","message":"MongoDB disconnected","service":"law-firm-api","timestamp":"2025-05-01 06:31:50"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 07:12:02"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 07:12:02"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 07:12:02"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 08:20:55"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 08:20:55"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 08:20:55"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 09:11:05"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 09:11:05"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 09:11:05"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 09:22:05"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 09:22:05"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 09:22:06"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 09:25:28"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 09:25:28"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 09:25:29"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 11:38:33"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 11:38:33"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 11:38:33"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 12:19:33"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 12:19:33"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 12:19:34"}

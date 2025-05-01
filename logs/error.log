@@ -1,0 +1,1 @@
+{"level":"error","message":"Error connecting to MongoDB: connect ECONNREFUSED 127.0.0.1:27017, connect ECONNREFUSED ::1:27017","service":"law-firm-api","timestamp":"2025-04-30 13:43:27"}
