@@ -47,7 +47,7 @@ const Login: React.FC = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>Abena</h1>
+          <h1>ABENA</h1>
           <p>Legal Case Management System</p>
         </div>
         
