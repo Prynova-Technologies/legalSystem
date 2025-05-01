@@ -113,3 +113,7 @@
 {"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 14:58:47"}
 {"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 14:58:48"}
 {"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 14:58:48"}
+{"level":"info","message":"Socket.IO server initialized","service":"law-firm-api","timestamp":"2025-05-01 15:26:58"}
+{"level":"info","message":"Server running in development mode on port 9000","service":"law-firm-api","timestamp":"2025-05-01 15:26:58"}
+{"level":"info","message":"MongoDB Connected: localhost","service":"law-firm-api","timestamp":"2025-05-01 15:26:58"}
+{"level":"info","message":"New user created","service":"law-firm-api","timestamp":"2025-05-01 15:33:52","userId":"6813cc9f35907c57c742c338"}
