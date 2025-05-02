@@ -110,7 +110,7 @@ const DataForm: React.FC<DataFormProps> = ({
     switch (type) {
       case 'textarea':
         return (
-          <div className="form-group" key={id}>
+          <div className="form-group" key={id} id={`${id}-group`}>
             <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
             <textarea
               id={id}
@@ -126,7 +126,7 @@ const DataForm: React.FC<DataFormProps> = ({
         
       case 'select':
         return (
-          <div className="form-group" key={id}>
+          <div className="form-group" key={id} id={`${id}-group`}>
             <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
             <select
               id={id}
@@ -148,7 +148,7 @@ const DataForm: React.FC<DataFormProps> = ({
         
       case 'checkbox':
         return (
-          <div className="form-group checkbox-group" key={id}>
+          <div className="form-group checkbox-group" key={id} id={`${id}-group`}>
             <label className="form-checkbox-label">
               <input
                 type="checkbox"
@@ -164,7 +164,7 @@ const DataForm: React.FC<DataFormProps> = ({
         
       case 'date':
         return (
-          <div className="form-group" key={id}>
+          <div className="form-group" key={id} id={`${id}-group`}>
             <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
             <input
               type="date"
@@ -180,7 +180,7 @@ const DataForm: React.FC<DataFormProps> = ({
         
       case 'number':
         return (
-          <div className="form-group" key={id}>
+          <div className="form-group" key={id} id={`${id}-group`}>
             <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
             <input
               type="number"
@@ -198,7 +198,7 @@ const DataForm: React.FC<DataFormProps> = ({
       case 'text':
       default:
         return (
-          <div className="form-group" key={id}>
+          <div className="form-group" key={id} id={`${id}-group`}>
             <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
             <input
               type="text"

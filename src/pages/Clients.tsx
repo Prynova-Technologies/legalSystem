@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchClients, setFilters, clearFilters } from '../store/slices/clientsSlice';
-import { DataTable, Button, StatusBadge } from '../components/common';
+import { DataTable, Button, StatusBadge, FilterSection, FilterConfig } from '../components/common';
 import * as FaIcons from 'react-icons/fa';
 import '../components/common/CommonStyles.css';
 
@@ -30,6 +30,43 @@ const Clients: React.FC = () => {
     dispatch(clearFilters());
     setSearchInput('');
   };
+
+  const filterConfigs: FilterConfig[] = [
+    {
+      type: 'select',
+      name: 'type',
+      label: 'Type',
+      options: [
+        { label: 'All Types', value: '' },
+        { label: 'Individual', value: 'individual' },
+        { label: 'Organization', value: 'organization' }
+      ],
+      valueTransform: (value) => value || null
+    },
+    {
+      type: 'select',
+      name: 'kycStatus',
+      label: 'KYC Status',
+      options: [
+        { label: 'All', value: '' },
+        { label: 'Verified', value: 'verified' },
+        { label: 'Unverified', value: 'unverified' }
+      ],
+      valueTransform: (value) => value === '' ? null : value === 'verified'
+    },
+    {
+      type: 'select',
+      name: 'conflictCheckStatus',
+      label: 'Conflict Check',
+      options: [
+        { label: 'All', value: '' },
+        { label: 'Pending', value: 'pending' },
+        { label: 'Cleared', value: 'cleared' },
+        { label: 'Flagged', value: 'flagged' }
+      ],
+      valueTransform: (value) => value || null
+    }
+  ];
 
   // Filter clients based on current filters
   const filteredClients = clients.filter(client => {
@@ -79,69 +116,28 @@ const Clients: React.FC = () => {
     <div className="clients-container">
       <div className="page-header">
         <h1>Clients</h1>
-        <Link to="/clients/new" className="btn btn-primary">
+        <Button
+          variant="primary"
+          to="/clients/new-client"
+          size="small"
+        >
           New Client
-        </Link>
+        </Button>
       </div>
 
-      <div className="filters-section">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            placeholder="Search clients..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="search-input"
-          />
-          <button type="submit" className="search-button">Search</button>
-        </form>
-
-        <div className="filter-controls">
-          <div className="filter-group">
-            <label>Type:</label>
-            <select
-              value={filters.type || ''}
-              onChange={(e) => handleFilterChange('type', e.target.value || null)}
-            >
-              <option value="">All Types</option>
-              <option value="individual">Individual</option>
-              <option value="organization">Organization</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>KYC Status:</label>
-            <select
-              value={filters.kycStatus === null ? '' : filters.kycStatus ? 'verified' : 'unverified'}
-              onChange={(e) => {
-                const value = e.target.value;
-                handleFilterChange('kycStatus', value === '' ? null : value === 'verified');
-              }}
-            >
-              <option value="">All</option>
-              <option value="verified">Verified</option>
-              <option value="unverified">Unverified</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Conflict Check:</label>
-            <select
-              value={filters.conflictCheckStatus || ''}
-              onChange={(e) => handleFilterChange('conflictCheckStatus', e.target.value || null)}
-            >
-              <option value="">All</option>
-              <option value="pending">Pending</option>
-              <option value="cleared">Cleared</option>
-              <option value="flagged">Flagged</option>
-            </select>
-          </div>
-
-          <button onClick={handleClearFilters} className="clear-filters-button">
-            Clear Filters
-          </button>
-        </div>
-      </div>
+      <FilterSection
+        filters={filterConfigs}
+        initialValues={{
+          type: filters.type || '',
+          kycStatus: filters.kycStatus === null ? '' : filters.kycStatus ? 'verified' : 'unverified',
+          conflictCheckStatus: filters.conflictCheckStatus || ''
+        }}
+        onFilterChange={handleFilterChange}
+        onSearch={handleSearch}
+        onClearFilters={handleClearFilters}
+        searchInputValue={searchInput}
+        onSearchInputChange={setSearchInput}
+      />
 
       {isLoading ? (
         <div className="loading-indicator">Loading clients...</div>

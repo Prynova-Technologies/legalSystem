@@ -1,56 +1,84 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import './CommonStyles.css';
 
-interface ButtonProps {
+export interface ButtonProps {
+  /** Button text content */
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger';
+  /** Button variant - determines color scheme */
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'text';
+  /** Button size */
   size?: 'small' | 'medium' | 'large';
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  onClick?: () => void;
+  /** Optional click handler */
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  /** Optional link destination if button should act as a link */
+  to?: string;
+  /** Additional CSS class names */
   className?: string;
+  /** Button type attribute */
+  type?: 'button' | 'submit' | 'reset';
+  /** Whether the button is disabled */
+  disabled?: boolean;
+  /** Whether the button should display a loading state */
+  loading?: boolean;
+  /** Full width button */
+  fullWidth?: boolean;
+  /** Icon to display before text */
+  startIcon?: React.ReactNode;
+  /** Icon to display after text */
+  endIcon?: React.ReactNode;
+  /** Additional props */
+  [x: string]: any;
 }
 
 const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
   size = 'medium',
+  onClick,
+  to,
+  className = '',
   type = 'button',
   disabled = false,
-  onClick,
-  className = '',
+  loading = false,
+  fullWidth = false,
+  startIcon,
+  endIcon,
+  ...rest
 }) => {
-  const baseStyles = 'rounded-md font-medium transition-colors duration-200';
-  
-  const variantStyles = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-    danger: 'bg-red-600 text-white hover:bg-red-700',
-  };
-
-  const sizeStyles = {
-    small: 'px-3 py-1 text-sm',
-    medium: 'px-4 py-2 text-base',
-    large: 'px-6 py-3 text-lg',
-  };
-
-  const disabledStyles = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
-
+  // Construct class names based on props
   const buttonClasses = [
-    baseStyles,
-    variantStyles[variant],
-    sizeStyles[size],
-    disabledStyles,
-    className,
-  ].join(' ');
+    'btn',
+    `btn-${variant}`,
+    `btn-${size}`,
+    fullWidth ? 'btn-full-width' : '',
+    loading ? 'btn-loading' : '',
+    className
+  ].filter(Boolean).join(' ');
 
+  // If 'to' prop is provided, render as Link component
+  if (to) {
+    return (
+      <Link to={to} className={buttonClasses} {...rest}>
+        {startIcon && <span className="btn-icon btn-icon-start">{startIcon}</span>}
+        {children}
+        {endIcon && <span className="btn-icon btn-icon-end">{endIcon}</span>}
+      </Link>
+    );
+  }
+
+  // Otherwise render as button element
   return (
     <button
       type={type}
       className={buttonClasses}
-      disabled={disabled}
       onClick={onClick}
+      disabled={disabled || loading}
+      {...rest}
     >
-      {children}
+      {startIcon && <span className="btn-icon btn-icon-start">{startIcon}</span>}
+      {loading ? <span className="btn-spinner"></span> : children}
+      {endIcon && <span className="btn-icon btn-icon-end">{endIcon}</span>}
     </button>
   );
 };

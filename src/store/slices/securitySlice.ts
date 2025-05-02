@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { User, UserRole } from '../../types';
+import { UserRole } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AuditLog {

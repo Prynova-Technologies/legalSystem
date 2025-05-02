@@ -10,7 +10,7 @@ const NewClient: React.FC = () => {
   };
 
   return (
-    <div className="page-container">
+    <div>
       <div className="page-header">
         <h1>New Client</h1>
       </div>

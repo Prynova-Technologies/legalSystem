@@ -45,23 +45,23 @@ interface AccountingIntegration extends Integration {
   };
 }
 
-interface DocumentIntegration extends Integration {
-  type: 'document';
-  provider: 'onedrive' | 'google_drive' | 'dropbox' | 'other';
-  config: {
-    syncDocuments: boolean;
-    defaultFolderId?: string;
-    preserveFolderStructure: boolean;
-  };
-}
+// interface DocumentIntegration extends Integration {
+//   type: 'document';
+//   provider: 'onedrive' | 'google_drive' | 'dropbox' | 'other';
+//   config: {
+//     syncDocuments: boolean;
+//     defaultFolderId?: string;
+//     preserveFolderStructure: boolean;
+//   };
+// }
 
-interface CustomIntegration extends Integration {
-  type: 'custom';
-  provider: string;
-  config: Record<string, any>;
-  webhookUrl?: string;
-  apiKey?: string;
-}
+// interface CustomIntegration extends Integration {
+//   type: 'custom';
+//   provider: string;
+//   config: Record<string, any>;
+//   webhookUrl?: string;
+//   apiKey?: string;
+// }
 
 interface SyncJob {
   id: string;

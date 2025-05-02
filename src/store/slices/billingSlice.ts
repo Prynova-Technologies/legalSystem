@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { BillingInfo, TimeEntry, Expense, Invoice } from '../../types';
+import { TimeEntry, Expense, Invoice } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface BillingState {

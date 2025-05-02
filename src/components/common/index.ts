@@ -10,6 +10,7 @@ import Modal from './Modal';
 import CalendarModal from './CalendarModal';
 import DashboardCharts from './Charts';
 import DataForm, { FormField, FormSection } from './Form';
+import FilterSection, { FilterConfig, FilterOption, FilterValues } from './FilterSection';
 
 export {
   Button,
@@ -24,7 +25,8 @@ export {
   Modal,
   CalendarModal,
   DashboardCharts,
-  DataForm
+  DataForm,
+  FilterSection
 };
 
-export type { FormField, FormSection };
+export type { FormField, FormSection, FilterConfig, FilterOption, FilterValues };

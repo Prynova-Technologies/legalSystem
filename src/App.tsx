@@ -24,6 +24,7 @@ import Settings from './pages/Settings';
 
 // Import styles
 import './App.css';
+import NewClient from './pages/NewClient';
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -61,6 +62,10 @@ const App: React.FC = () => {
         <Route
           path="/clients/:id"
           element={isAuthenticated ? <Layout><ClientDetail /></Layout> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/clients/new-client"
+          element={isAuthenticated ? <Layout><NewClient /></Layout> : <Navigate to="/login" replace />}
         />
         {/* Calendar functionality moved to Tasks page */}
         <Route
