@@ -6,15 +6,16 @@ import {
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
 } from 'recharts';
 import './CommonStyles.css';
+import { DashboardData } from '../../services/dashboardService';
 
 interface DashboardChartsProps {
   className?: string;
+  dashboardData: DashboardData | null;
 }
 
-const DashboardCharts: React.FC<DashboardChartsProps> = ({ className }) => {
+const DashboardCharts: React.FC<DashboardChartsProps> = ({ className, dashboardData }) => {
   const { cases } = useSelector((state: RootState) => state.cases);
   const { tasks } = useSelector((state: RootState) => state.tasks);
-  const { timeEntries } = useSelector((state: RootState) => state.billing);
 
   // Prepare data for case status chart
   const caseStatusData = [
@@ -32,26 +33,23 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ className }) => {
     { name: 'Urgent', value: tasks.filter(t => t.priority === 'urgent').length },
   ];
 
-  // Prepare data for billing by month
+  // Prepare data for monthly income and expenditure
   const currentYear = new Date().getFullYear();
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  const billingByMonth = monthNames.map((month, index) => {
-    const entriesInMonth = timeEntries.filter(entry => {
-      const entryDate = new Date(entry.date);
-      return entryDate.getMonth() === index && entryDate.getFullYear() === currentYear;
-    });
-    
-    const totalHours = entriesInMonth.reduce((sum, entry) => sum + entry.duration / 60, 0);
-    const billedHours = entriesInMonth.filter(entry => entry.billed).reduce((sum, entry) => sum + entry.duration / 60, 0);
-    const unbilledHours = totalHours - billedHours;
-    
+  // Format monthly financial data for the chart
+  const monthlyFinancialData = dashboardData?.graphs?.monthlyFinancial?.map((item) => {
     return {
-      name: month,
-      billed: parseFloat(billedHours.toFixed(1)),
-      unbilled: parseFloat(unbilledHours.toFixed(1)),
+      name: monthNames[item.month - 1],
+      income: item.income,
+      expenditure: item.expenditure || 0
     };
-  });
+  }) || [];
+  
+  // If no data is available, create empty placeholder data
+  const financialChartData = monthlyFinancialData.length > 0 ? 
+    monthlyFinancialData : 
+    monthNames.map(month => ({ name: month, income: 0, expenditure: 0 }));
 
   // Prepare data for case types
   const caseTypeData = [
@@ -110,17 +108,17 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ className }) => {
         </div>
 
         <div className="chart-card">
-          <h3>Billing Hours by Month</h3>
+          <h3>Monthly Income & Expenditure</h3>
           <div className="chart-container">
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={billingByMonth}>
+              <AreaChart data={financialChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`${value} hours`, '']} />
+                <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, '']} />
                 <Legend />
-                <Area type="monotone" dataKey="billed" stackId="1" stroke="#4a6cf7" fill="#4a6cf7" />
-                <Area type="monotone" dataKey="unbilled" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
+                <Area type="monotone" dataKey="income" stackId="1" stroke="#4a6cf7" fill="#4a6cf7" name="Income" />
+                <Area type="monotone" dataKey="expenditure" stackId="2" stroke="#FF8042" fill="#FF8042" name="Expenditure" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

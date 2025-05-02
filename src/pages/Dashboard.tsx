@@ -1,44 +1,51 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { fetchCases } from '../store/slices/casesSlice';
-import { fetchTasks } from '../store/slices/tasksSlice';
-import { fetchEvents } from '../store/slices/calendarSlice';
-import { fetchTimeEntries } from '../store/slices/billingSlice';
+import dashboardService, { DashboardData } from '../services/dashboardService';
 import { DashboardCharts } from '../components/common';
 
 const Dashboard: React.FC = () => {
-  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { cases, isLoading: casesLoading } = useSelector((state: RootState) => state.cases);
-  const { tasks, isLoading: tasksLoading } = useSelector((state: RootState) => state.tasks);
-  const { events, isLoading: eventsLoading } = useSelector((state: RootState) => state.calendar);
-  const { timeEntries, isLoading: timeEntriesLoading } = useSelector((state: RootState) => state.billing);
+  // State for dashboard data
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load dashboard data
-    dispatch(fetchCases() as any);
-    dispatch(fetchTasks() as any);
-    dispatch(fetchEvents() as any);
-    dispatch(fetchTimeEntries() as any);
-  }, [dispatch]);
+    // Load dashboard data from API
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await dashboardService.getDashboardData();
+        setDashboardData(data);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const isLoading = casesLoading || tasksLoading || eventsLoading || timeEntriesLoading;
-
-  // Calculate dashboard metrics
-  const openCasesCount = cases.filter(c => c.status === 'open').length;
-  const upcomingTasksCount = tasks.filter(t => t.status !== 'completed').length;
-  const upcomingEventsCount = events.filter(e => new Date(e.startTime) > new Date()).length;
-  const unbilledHours = timeEntries.filter(t => !t.billed).reduce((total, entry) => total + entry.duration / 60, 0);
+    fetchDashboardData();
+  }, []);
+  
+  // Get metrics from dashboard data
+  const openCasesCount = dashboardData?.metrics?.openCases || 0;
+  const upcomingTasksCount = dashboardData?.metrics?.assignedTasks || 0;
+  const upcomingEventsCount = dashboardData?.upcoming?.events?.length || 0;
+  const unbilledHours = dashboardData?.metrics?.unbilledHours || 0;
 
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1>Welcome, {user?.firstName}!</h1>
+        <h1>Welcome, {user?.data.firstName}!</h1>
         <p>Here's an overview of your legal practice</p>
       </div>
 
-      {isLoading ? (
+      {error ? (
+        <div className="error-message">{error}</div>
+      ) : isLoading ? (
         <div className="loading-indicator">Loading dashboard data...</div>
       ) : (
         <>
@@ -71,10 +78,10 @@ const Dashboard: React.FC = () => {
           <div className="dashboard-sections">
             <div className="dashboard-section">
               <h2>Recent Cases</h2>
-              {cases.length > 0 ? (
+              {dashboardData?.recent?.cases && dashboardData.recent.cases.length > 0 ? (
                 <div className="dashboard-list">
-                  {cases.slice(0, 5).map(c => (
-                    <div key={c.id} className="dashboard-list-item">
+                  {dashboardData.recent.cases.slice(0, 5).map(c => (
+                    <div key={c._id} className="dashboard-list-item">
                       <div className="item-title">{c.title}</div>
                       <div className="item-subtitle">{c.caseNumber}</div>
                       <div className={`item-status status-${c.status}`}>{c.status}</div>
@@ -88,18 +95,15 @@ const Dashboard: React.FC = () => {
 
             <div className="dashboard-section">
               <h2>Upcoming Tasks</h2>
-              {tasks.length > 0 ? (
+              {dashboardData?.upcoming?.tasks && dashboardData.upcoming.tasks.length > 0 ? (
                 <div className="dashboard-list">
-                  {tasks
-                    .filter(t => t.status !== 'completed')
-                    .slice(0, 5)
-                    .map(t => (
-                      <div key={t.id} className="dashboard-list-item">
-                        <div className="item-title">{t.title}</div>
-                        <div className="item-subtitle">Due: {new Date(t.dueDate).toLocaleDateString()}</div>
-                        <div className={`item-priority priority-${t.priority}`}>{t.priority}</div>
-                      </div>
-                    ))}
+                  {dashboardData.upcoming.tasks.slice(0, 5).map(t => (
+                    <div key={t._id} className="dashboard-list-item">
+                      <div className="item-title">{t.title}</div>
+                      <div className="item-subtitle">Due: {new Date(t.dueDate).toLocaleDateString()}</div>
+                      <div className="item-status">{t.status}</div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <p className="empty-state">No upcoming tasks</p>
@@ -108,20 +112,17 @@ const Dashboard: React.FC = () => {
 
             <div className="dashboard-section">
               <h2>Upcoming Events</h2>
-              {events.length > 0 ? (
+              {dashboardData?.upcoming?.events && dashboardData.upcoming.events.length > 0 ? (
                 <div className="dashboard-list">
-                  {events
-                    .filter(e => new Date(e.startTime) > new Date())
-                    .slice(0, 5)
-                    .map(e => (
-                      <div key={e.id} className="dashboard-list-item">
-                        <div className="item-title">{e.title}</div>
-                        <div className="item-subtitle">
-                          {new Date(e.startTime).toLocaleDateString()} at {new Date(e.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </div>
-                        <div className={`item-type event-type-${e.eventType}`}>{e.eventType.replace('_', ' ')}</div>
+                  {dashboardData.upcoming.events.map(e => (
+                    <div key={e.title} className="dashboard-list-item">
+                      <div className="item-title">{e.title}</div>
+                      <div className="item-subtitle">
+                        {new Date(e.date).toLocaleDateString()}
                       </div>
-                    ))}
+                      {e.description && <div className="item-description">{e.description}</div>}
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <p className="empty-state">No upcoming events</p>
@@ -130,12 +131,12 @@ const Dashboard: React.FC = () => {
 
             <div className="dashboard-section">
               <h2>Recent Time Entries</h2>
-              {timeEntries.length > 0 ? (
+              {dashboardData?.recent?.timeEntries && dashboardData.recent.timeEntries.length > 0 ? (
                 <div className="dashboard-list">
-                  {timeEntries.slice(0, 5).map(entry => (
-                    <div key={entry.id} className="dashboard-list-item">
+                  {dashboardData.recent.timeEntries.map(entry => (
+                    <div key={entry._id} className="dashboard-list-item">
                       <div className="item-title">{entry.description}</div>
-                      <div className="item-subtitle">{new Date(entry.date).toLocaleDateString()}</div>
+                      <div className="item-subtitle">{new Date(entry.createdAt).toLocaleDateString()}</div>
                       <div className="item-hours">{(entry.duration / 60).toFixed(1)} hrs</div>
                     </div>
                   ))}
@@ -146,7 +147,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <DashboardCharts />
+          <DashboardCharts dashboardData={dashboardData} />
         </>
       )}
     </div>

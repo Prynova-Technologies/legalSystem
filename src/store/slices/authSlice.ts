@@ -85,6 +85,24 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+      })
+      .addCase(getCurrentUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+      })
+      .addCase(getCurrentUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        // If we can't get the current user, clear the authentication state
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem('token');
       });
   },
 });

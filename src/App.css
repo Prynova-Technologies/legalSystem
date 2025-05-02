@@ -195,9 +195,10 @@
 }
 
 .dashboard-sections {
-  display: grid;
+  display: flex;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
+  justify-content: space-between;
 }
 
 /* Case Detail Page Styles */
@@ -626,6 +627,7 @@
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  width: 20rem;
 }
 
 .dashboard-section h2 {
