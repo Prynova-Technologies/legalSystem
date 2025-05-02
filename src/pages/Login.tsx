@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../store/slices/authSlice';
 import { RootState } from '../store';
+import authService from '../services/authService';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -28,20 +29,42 @@ const Login: React.FC = () => {
     e.preventDefault();
     
     try {
-      // For demo purposes, we'll use the mock login from authSlice
-      // In a real app, this would validate credentials with a backend
+      // Validate form data before submitting
+      if (!formData.email || !formData.password) {
+        return; // Form validation will handle this
+      }
+      
+      // Use the real login from authSlice which now uses authService
       const resultAction = await dispatch(login({
         email: formData.email,
         password: formData.password,
       }) as any);
       
+      // Check if login was successful
       if (login.fulfilled.match(resultAction)) {
+        // If remember me is checked, we could set a longer expiry for the token
+        // or store additional info in localStorage
+        if (formData.rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+        }
+        
         navigate('/');
       }
+      // If login failed, the error will be handled by the auth slice
+      // and displayed in the UI via the error state
     } catch (err) {
       console.error('Login failed:', err);
     }
   };
+  
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (authService.isAuthenticated()) {
+      navigate('/');
+    }
+  }, [navigate]);
 
   return (
     <div className="login-container">
@@ -100,19 +123,14 @@ const Login: React.FC = () => {
           </div>
           
           <button 
-            type="submit" 
+            type="button" 
             className="login-button" 
             disabled={isLoading}
+            onClick={handleSubmit}
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-        
-        <div className="login-footer">
-          <p>Demo Credentials:</p>
-          <p>Email: admin@legalfirm.com</p>
-          <p>Password: password</p>
-        </div>
       </div>
     </div>
   );

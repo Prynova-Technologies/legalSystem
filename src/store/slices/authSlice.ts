@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { User, UserRole } from '../../types';
+import { User } from '../../types';
+import authService from '../../services/authService';
 
 interface AuthState {
   user: User | null;
@@ -12,44 +13,40 @@ interface AuthState {
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('token'),
-  isAuthenticated: false,
+  isAuthenticated: !!localStorage.getItem('token'),
   isLoading: false,
   error: null,
 };
 
-// Mock login function - would be replaced with actual API call
+// Real login function using authService
 export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login response
-      if (email === 'admin@legalfirm.com' && password === 'password') {
-        const userData: User = {
-          id: '1',
-          email: 'admin@legalfirm.com',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: UserRole.ADMIN,
-        };
-        
-        const token = 'mock-jwt-token';
-        localStorage.setItem('token', token);
-        
-        return { user: userData, token };
+      // Validate inputs
+      if (!email || !password) {
+        return rejectWithValue('Email and password are required');
       }
       
-      return rejectWithValue('Invalid email or password');
-    } catch (error) {
-      return rejectWithValue('Login failed. Please try again.');
+      const response = await authService.login(email, password);
+      
+      // Ensure we have both user data and token
+      if (!response.user || !response.token) {
+        return rejectWithValue('Invalid response from server');
+      }
+      
+      return { user: response.user, token: response.token };
+    } catch (error: any) {
+      // Handle error message from authService
+      return rejectWithValue(
+        error.message || 'Login failed. Please try again.'
+      );
     }
   }
 );
 
 export const logout = createAsyncThunk('auth/logout', async () => {
-  localStorage.removeItem('token');
+  await authService.logout();
   return null;
 });
 
@@ -91,6 +88,21 @@ const authSlice = createSlice({
       });
   },
 });
+
+// Thunk to get current user profile
+export const getCurrentUser = createAsyncThunk(
+  'auth/getCurrentUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const userData = await authService.getCurrentUser();
+      return { user: userData };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch user profile.'
+      );
+    }
+  }
+);
 
 export const { setCredentials, clearCredentials } = authSlice.actions;
 export default authSlice.reducer;

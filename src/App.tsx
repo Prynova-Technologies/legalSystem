@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './store';
+import { getCurrentUser } from './store/slices/authSlice';
 
 // Import Layout
 import Layout from './components/Layout/Layout';
@@ -25,7 +26,15 @@ import Settings from './pages/Settings';
 import './App.css';
 
 const App: React.FC = () => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const { isAuthenticated, token } = useSelector((state: RootState) => state.auth);
+  
+  // Check for authentication on initial load
+  useEffect(() => {
+    if (token) {
+      dispatch(getCurrentUser() as any);
+    }
+  }, [dispatch, token]);
 
   return (
     <Router>
