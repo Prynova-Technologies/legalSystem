@@ -200,6 +200,27 @@ export const getDashboardAnalytics = async (req: Request, res: Response, next: N
     // This is a placeholder - you would need to implement this based on your events model
     const upcomingEvents: IEvent[] = [];
     
+    // Get case status distribution data
+    const caseStatusDistribution = await Case.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $project: { status: '$_id', count: 1, _id: 0 } }
+    ]);
+
+    // Get case type distribution data
+    const caseTypeDistribution = await Case.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: '$type', count: { $sum: 1 } } },
+      { $project: { type: '$_id', count: 1, _id: 0 } }
+    ]);
+
+    // Get task priority breakdown data
+    const taskPriorityBreakdown = await Task.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: '$priority', count: { $sum: 1 } } },
+      { $project: { priority: '$_id', count: 1, _id: 0 } }
+    ]);
+    
     // Compile all dashboard data
     const dashboardData = {
       metrics: {
@@ -212,7 +233,10 @@ export const getDashboardAnalytics = async (req: Request, res: Response, next: N
         clientCount
       },
       graphs: {
-        monthlyFinancial: monthlyFinancialData
+        monthlyFinancial: monthlyFinancialData,
+        caseStatusDistribution,
+        caseTypeDistribution,
+        taskPriorityBreakdown
       },
       recent: {
         cases: recentCases,
