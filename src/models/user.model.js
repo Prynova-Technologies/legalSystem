@@ -164,6 +164,10 @@ userSchema.pre('save', function (next) {
 userSchema.methods.comparePassword = function (candidatePassword) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
+            // Check if password exists before comparing
+            if (!this.password) {
+                throw new Error('Password field is missing. Make sure to include it in the query with .select("+password")');
+            }
             return [2 /*return*/, bcryptjs_1.default.compare(candidatePassword, this.password)];
         });
     });

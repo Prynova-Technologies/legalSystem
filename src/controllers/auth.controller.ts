@@ -88,6 +88,8 @@ export const authController = {
     try {
       const { email, password } = req.body;
 
+      console.log('Login attempt:', { email, password });
+
       // Validate email and password
       if (!email || !password) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'Please provide email and password');
