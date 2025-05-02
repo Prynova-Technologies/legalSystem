@@ -191,7 +191,7 @@ userSchema.methods.createPasswordResetToken = function () {
 };
 // Static method to find user by email
 userSchema.statics.findByEmail = function (email) {
-    return this.findOne({ email: email });
+    return this.findOne({ email: email }).select('+password');
 };
 var User = mongoose_1.default.model('User', userSchema);
 exports.default = User;
