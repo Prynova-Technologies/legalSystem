@@ -133,13 +133,36 @@ export const getDashboardAnalytics = async (req: Request, res: Response, next: N
       }
     ]);
     
-    // Format monthly income for graph
-    const monthlyIncomeData = Array.from({ length: 12 }, (_, i) => {
+    // Monthly expenditure data for graph
+    const monthlyExpenditure = await TimeEntry.aggregate([
+      {
+        $match: {
+          date: { $gte: startOfYear, $lte: endOfYear },
+          isDeleted: false,
+          // Consider entries that represent expenses
+          isExpense: true
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$date' },
+          expenditure: { $sum: '$amount' }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+    
+    // Format monthly income and expenditure for graph
+    const monthlyFinancialData = Array.from({ length: 12 }, (_, i) => {
       const month = i + 1;
-      const found = monthlyIncome.find(item => item._id === month);
+      const incomeFound = monthlyIncome.find(item => item._id === month);
+      const expenditureFound = monthlyExpenditure.find(item => item._id === month);
       return {
         month,
-        income: found ? found.income : 0
+        income: incomeFound ? incomeFound.income : 0,
+        expenditure: expenditureFound ? expenditureFound.expenditure : 0
       };
     });
     
@@ -189,7 +212,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response, next: N
         clientCount
       },
       graphs: {
-        monthlyIncome: monthlyIncomeData
+        monthlyFinancial: monthlyFinancialData
       },
       recent: {
         cases: recentCases,
