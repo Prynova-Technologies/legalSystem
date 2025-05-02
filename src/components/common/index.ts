@@ -8,8 +8,8 @@ import DataTable from './DataTable';
 import StatusBadge from './StatusBadge';
 import Modal from './Modal';
 import CalendarModal from './CalendarModal';
-import DashboardCharts from './DashboardCharts';
-import DataForm, { FormField, FormSection } from './DataForm';
+import DashboardCharts from './Charts';
+import DataForm, { FormField, FormSection } from './Form';
 
 export {
   Button,
