@@ -85,7 +85,7 @@ const Cases: React.FC = () => {
     <div className="cases-container">
       <div className="page-header">
         <h1>Cases</h1>
-        <Link to="/cases/new" className="btn btn-primary">
+        <Link to="/new-case" className="btn btn-primary">
           New Case
         </Link>
       </div>

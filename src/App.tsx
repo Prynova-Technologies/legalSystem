@@ -10,7 +10,7 @@ import Layout from './components/Layout/Layout';
 // Import pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Cases from './pages/Cases';
+import Cases from './pages/cases';
 import CaseDetail from './pages/CaseDetail';
 import Clients from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
