@@ -28,10 +28,28 @@ interface MonthlyFinancial {
   expenditure: number;
 }
 
+interface CaseStatusItem {
+  status: string;
+  count: number;
+}
+
+interface CaseTypeItem {
+  type: string;
+  count: number;
+}
+
+interface TaskPriorityItem {
+  priority: string;
+  count: number;
+}
+
 interface DashboardData {
   metrics: DashboardMetrics;
   graphs: {
     monthlyFinancial: MonthlyFinancial[];
+    caseStatusDistribution: CaseStatusItem[];
+    caseTypeDistribution: CaseTypeItem[];
+    taskPriorityBreakdown: TaskPriorityItem[];
   };
   recent: {
     cases: any[];
