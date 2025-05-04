@@ -37,7 +37,7 @@ export const getAllDocuments = async (req: Request, res: Response, next: NextFun
     }
     
     const documents = await Document.find(filter)
-      .populate('uploadedBy', 'firstName lastName')
+      .populate('createdBy', 'firstName lastName')
       .populate('case', 'caseNumber title')
       .populate('client', 'firstName lastName company')
       .sort({ createdAt: -1 });
