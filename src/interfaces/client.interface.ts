@@ -18,6 +18,9 @@ export interface IClientDocument {
 export interface IClient {
   firstName: string;
   lastName: string;
+  clientType?: 'personal' | 'organization';
+  dateOfBirth?: Date;
+  maritalStatus?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated';
   company?: string;
   contacts: IClientContact[];
   primaryAttorney?: string | IUserDocument;

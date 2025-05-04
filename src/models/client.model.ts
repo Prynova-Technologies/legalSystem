@@ -33,6 +33,18 @@ const clientSchema = new Schema<IClientDocument, IClientModel>(
       required: [true, 'Last name is required'],
       trim: true,
     },
+    clientType: {
+      type: String,
+      enum: ['personal', 'organization'],
+      default: 'personal',
+    },
+    dateOfBirth: {
+      type: Date,
+    },
+    maritalStatus: {
+      type: String,
+      enum: ['single', 'married', 'divorced', 'widowed', 'separated'],
+    },
     company: {
       type: String,
       trim: true,

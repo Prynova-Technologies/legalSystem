@@ -12,7 +12,8 @@ export enum DocumentType {
   FORM = 'form',
   INVOICE = 'invoice',
   NOTE = 'note',
-  OTHER = 'other'
+  OTHER = 'other',
+  KYC = 'kyc'
 }
 
 export interface IDocumentVersion {

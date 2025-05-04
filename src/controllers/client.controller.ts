@@ -36,9 +36,9 @@ export const getAllClients = async (req: Request, res: Response, next: NextFunct
       ];
     }
     
-    const clients = await Client.find(filter)
-      .populate('primaryAttorney', 'firstName lastName email')
-      .sort({ lastName: 1, firstName: 1 });
+    const clients = await Client.find()
+      // .populate('primaryAttorney', 'firstName lastName email')
+      // .sort({ lastName: 1, firstName: 1 });
     
     res.status(200).json({
       success: true,
@@ -53,8 +53,7 @@ export const getAllClients = async (req: Request, res: Response, next: NextFunct
 // Get a single client by ID
 export const getClientById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await Client.findOne({ _id: req.params.id, isDeleted: false })
-      .populate('primaryAttorney', 'firstName lastName email');
+    const client = await Client.findById({ _id: req.params.id, isDeleted: false })
     
     if (!client) {
       return res.status(404).json({

@@ -35,6 +35,31 @@ export const userController = {
   },
 
   /**
+   * Get users by role
+   */
+  getUsersByRole: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { role } = req.params;
+      
+      if (!role || !Object.values(UserRole).includes(role as UserRole)) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'Valid role is required');
+      }
+
+      const users = await UserService.getUsersByRole(role as UserRole);
+      
+      res.status(httpStatus.OK).json({
+        success: true,
+        data: users
+      });
+    } catch (error) {
+      res.status(error instanceof ApiError ? error.statusCode : httpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'An error occurred'
+      });
+    }
+  },
+
+  /**
    * Get user by ID
    */
   getUserById: async (req: Request, res: Response, next: NextFunction): Promise<void> => {

@@ -12,6 +12,9 @@ router.use(authenticate);
 // Get all users - Admin only
 router.get('/', authorize([UserRole.ADMIN]), userController.getAllUsers);
 
+// Get users by role - Accessible to lawyers, paralegals, and admins
+router.get('/role/:role', authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]), userController.getUsersByRole);
+
 // Update own profile - All authenticated users
 router.put('/profile/update', userController.updateProfile);
 

@@ -88,14 +88,13 @@ export const createDocument = async (req: Request, res: Response, next: NextFunc
         message: 'User not authenticated'
       });
     }
-    req.body.uploadedBy = user.id;
     
     // Set initial version
     req.body.versions = [{
       version: 1,
       fileName: req.body.fileName,
       filePath: req.body.filePath,
-      uploadedBy: user.id,
+      uploadedBy: req.body.uploadedBy,
       uploadedAt: new Date(),
       notes: req.body.notes || 'Initial version'
     }];

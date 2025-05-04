@@ -1,5 +1,5 @@
 import User from '../models/user.model';
-import { IUserDocument } from '../interfaces/user.interface';
+import { IUserDocument, UserRole } from '../interfaces/user.interface';
 import logger from '../utils/logger';
 
 /**
@@ -94,6 +94,20 @@ export class UserService {
       return false;
     } catch (error) {
       logger.error('Error deleting user', { error, userId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get users by role
+   */
+  static async getUsersByRole(role: UserRole): Promise<IUserDocument[]> {
+    try {
+      return await User.find({ role, isActive: true })
+        .select('_id firstName lastName email')
+        .sort({ lastName: 1, firstName: 1 });
+    } catch (error) {
+      logger.error('Error fetching users by role', { error, role });
       throw error;
     }
   }
