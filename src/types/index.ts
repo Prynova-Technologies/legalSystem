@@ -1,14 +1,19 @@
-// Define types for the legal case management system
+// Type definitions for the application
 
-// User types
+// User type definition
 export interface User {
   id: string;
-  email: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
-  avatar?: string;
+  email: string;
+  role: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+// Re-export document types
+export * from './documentTypes';
 
 export enum UserRole {
   ADMIN = 'admin',

@@ -9,7 +9,7 @@
   margin-bottom: 2rem;
   background-color: white;
   border-radius: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
   padding: 1.5rem 2rem;
   transition: box-shadow 0.3s ease;
 }
@@ -121,7 +121,7 @@
 
 /* Add some spacing between sections */
 .client-form-container .data-form > .form-section + .form-section {
-  margin-top: 2rem;
+  /* margin-top: 1rem; */
 }
 
 /* Style form error messages */

@@ -53,7 +53,7 @@ const authService = {
     try {
       // Make API call to backend authentication endpoint
       const response = await api.post('/auth/login', { email, password });
-      
+      console.log(response)
       // Validate response - ensure we have a token
       if (!response.data || !response.data.token) {
         console.log(response)

@@ -26,6 +26,7 @@ interface DataFormProps {
   submitButtonText?: string;
   cancelButtonText?: string;
   isLoading?: boolean;
+  onChange?: Record<string, (value: any) => void>;
 }
 
 const DataForm: React.FC<DataFormProps> = ({
@@ -36,7 +37,8 @@ const DataForm: React.FC<DataFormProps> = ({
   initialData = {},
   submitButtonText = 'Save',
   cancelButtonText = 'Cancel',
-  isLoading = false
+  isLoading = false,
+  onChange = {}
 }) => {
   // Initialize form data with initial values or empty values
   const [formData, setFormData] = useState<Record<string, any>>(() => {
@@ -67,6 +69,11 @@ const DataForm: React.FC<DataFormProps> = ({
         delete newErrors[fieldId];
         return newErrors;
       });
+    }
+
+    // Call custom onChange handler if provided for this field
+    if (onChange[fieldId]) {
+      onChange[fieldId](value);
     }
   };
 

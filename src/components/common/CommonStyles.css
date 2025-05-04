@@ -574,6 +574,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  padding: 2rem;
 }
 
 .modal-small {
@@ -970,7 +971,7 @@
 .data-form-container {
   background-color: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); */
   padding: 1.5rem;
   margin-bottom: 1.5rem;
 }

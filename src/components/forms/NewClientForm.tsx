@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataForm, { FormSection } from '../common/Form';
 import { toast } from 'react-toastify';
+import { createClient } from '../../services/clientService';
+import { User } from '../../services/userService';
 import './FormStyles.css';
+type ClientType = 'personal' | 'organization';
 
 interface NewClientFormProps {
   onCancel: () => void;
@@ -11,6 +14,12 @@ interface NewClientFormProps {
 const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+
+  const [clientType, setClientType] = useState<ClientType>('personal');
+
+  const handleClientTypeChange = (value: string) => {
+    setClientType(value as ClientType);
+  };
 
   const handleSubmit = async (formData: Record<string, any>) => {
     try {
@@ -40,12 +49,42 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
           value: formData.address
         });
       }
+
+      // Add company contact for organization
+      if (clientType === 'organization' && formData.companyEmail) {
+        contacts.push({
+          type: 'email',
+          value: formData.companyEmail,
+          isPrimary: false,
+          label: 'Company Email'
+        });
+      }
+
+      if (clientType === 'organization' && formData.companyPhone) {
+        contacts.push({
+          type: 'phone',
+          value: formData.companyPhone,
+          isPrimary: false,
+          label: 'Company Phone'
+        });
+      }
+
+      if (clientType === 'organization' && formData.companyAddress) {
+        contacts.push({
+          type: 'address',
+          value: formData.companyAddress,
+          label: 'Company Address'
+        });
+      }
       
       // Prepare client data
       const clientData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        clientType: formData.clientType,
         company: formData.company || undefined,
+        dateOfBirth: clientType === 'personal' ? formData.dateOfBirth || undefined : undefined,
+        maritalStatus: clientType === 'personal' ? formData.maritalStatus || undefined : undefined,
         contacts,
         primaryAttorney: formData.primaryAttorney || undefined,
         referralSource: formData.referralSource || undefined,
@@ -53,28 +92,16 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
         notes: formData.notes || undefined,
         tags: formData.tags ? formData.tags.split(',').map((tag: string) => tag.trim()) : [],
         isActive: true,
-        kycVerified: formData.kycVerified || false,
-        conflictCheckCompleted: formData.conflictCheckCompleted || false,
-        conflictCheckNotes: formData.conflictCheckNotes || undefined
+        kycVerified: false,
+        conflictCheckCompleted: false,
+        conflictCheckNotes: undefined
       };
       
-      // Make API call to create client
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(clientData)
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to create client');
-      }
+      // Use client service to create client
+      const result = await createClient(clientData);
       
       toast.success('Client created successfully');
-      navigate(`/clients/${result.data._id}`);
+      navigate(`/clients/${result._id}`);
     } catch (error) {
       console.error('Error creating client:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create client');
@@ -91,12 +118,31 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
 
   // Phone validation function
   const validatePhone = (phone: string) => {
+    // eslint-disable-next-line no-useless-escape
     const phoneRegex = /^[\d\s\-\(\)\+]+$/;
     return phoneRegex.test(phone) ? null : 'Please enter a valid phone number';
   };
 
-  const formSections: FormSection[] = [
-    {
+  // Get form sections based on client type
+  const getFormSections = (): FormSection[] => {
+    const clientTypeSection: FormSection = {
+      title: 'Client Type',
+      fields: [
+        {
+          id: 'clientType',
+          label: 'Client Type',
+          type: 'select',
+          options: [
+            { value: 'personal', label: 'Personal' },
+            { value: 'organization', label: 'Organization' }
+          ],
+          required: true
+        }
+      ]
+    };
+
+    // Basic information section changes based on client type
+    const basicInfoSection: FormSection = {
       title: 'Basic Information',
       fields: [
         {
@@ -112,16 +158,50 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
           type: 'text',
           placeholder: 'Enter last name',
           required: true
-        },
-        {
-          id: 'company',
-          label: 'Company',
-          type: 'text',
-          placeholder: 'Enter company name (if applicable)'
         }
       ]
-    },
-    {
+    };
+
+    // Add personal client fields
+    if (clientType === 'personal') {
+      basicInfoSection.fields.push(
+        {
+          id: 'dateOfBirth',
+          label: 'Date of Birth',
+          type: 'date',
+          placeholder: 'Select date of birth'
+        },
+        {
+          id: 'maritalStatus',
+          label: 'Marital Status',
+          type: 'select',
+          options: [
+            { value: '', label: 'Select marital status' },
+            { value: 'single', label: 'Single' },
+            { value: 'married', label: 'Married' },
+            { value: 'divorced', label: 'Divorced' },
+            { value: 'widowed', label: 'Widowed' },
+            { value: 'separated', label: 'Separated' }
+          ]
+        }
+      );
+    }
+
+    // Add organization client fields
+    if (clientType === 'organization') {
+      basicInfoSection.fields.push(
+        {
+          id: 'company',
+          label: 'Company Name',
+          type: 'text',
+          placeholder: 'Enter company name',
+          required: true
+        }
+      );
+    }
+
+    // Create contact information section
+    const contactInfoSection: FormSection = {
       title: 'Contact Information',
       fields: [
         {
@@ -145,61 +225,36 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
           placeholder: 'Enter address'
         }
       ]
-    },
-    {
-      title: 'Case Information',
-      fields: [
+    };
+    
+    // Add company contact fields for organization
+    if (clientType === 'organization') {
+      contactInfoSection.fields.push(
         {
-          id: 'primaryAttorney',
-          label: 'Primary Attorney',
-          type: 'select',
-          options: [
-            // This would typically be populated from an API call
-            { value: '', label: 'Select an attorney' },
-            { value: 'attorney1', label: 'John Doe' },
-            { value: 'attorney2', label: 'Jane Smith' }
-          ]
-        },
-        {
-          id: 'referralSource',
-          label: 'Referral Source',
-          type: 'text',
-          placeholder: 'How did the client hear about us?'
-        },
-        {
-          id: 'intakeDate',
-          label: 'Intake Date',
-          type: 'date'
-        },
-        {
-          id: 'tags',
-          label: 'Tags',
-          type: 'text',
-          placeholder: 'Enter tags separated by commas'
-        }
-      ]
-    },
-    {
-      title: 'Compliance',
-      fields: [
-        {
-          id: 'kycVerified',
-          label: 'KYC Verified',
-          type: 'checkbox'
-        },
-        {
-          id: 'conflictCheckCompleted',
-          label: 'Conflict Check Completed',
-          type: 'checkbox'
-        },
-        {
-          id: 'conflictCheckNotes',
-          label: 'Conflict Check Notes',
+          id: 'companyAddress',
+          label: 'Company Address',
           type: 'textarea',
-          placeholder: 'Enter any notes about conflict checks'
+          placeholder: 'Enter company address',
+          required: true
+        },
+        {
+          id: 'companyEmail',
+          label: 'Company Email',
+          type: 'text',
+          placeholder: 'Enter company email',
+          validation: validateEmail
+        },
+        {
+          id: 'companyPhone',
+          label: 'Company Phone',
+          type: 'text',
+          placeholder: 'Enter company phone number',
+          validation: validatePhone
         }
-      ]
-    },
+      );
+    }
+    
+    const formSections: FormSection[] = [clientTypeSection, basicInfoSection, contactInfoSection,
     {
       title: 'Additional Information',
       fields: [
@@ -212,16 +267,22 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
       ]
     }
   ];
+  
+  return formSections;
+  };
 
   return (
     <div className="client-form-container">
       <DataForm
         title="Add New Client"
-        sections={formSections}
+        sections={getFormSections()}
         onSubmit={handleSubmit}
         onCancel={onCancel}
         submitButtonText="Create Client"
         isLoading={isLoading}
+        onChange={{
+          clientType: handleClientTypeChange
+        }}
       />
     </div>
   );

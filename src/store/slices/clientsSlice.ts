@@ -29,88 +29,38 @@ const initialState: ClientsState = {
 };
 
 // Mock API calls - would be replaced with actual API calls
-export const fetchClients = createAsyncThunk('clients/fetchClients', async (_, { rejectWithValue }) => {
+export const fetchClients = createAsyncThunk('clients/fetchClients', async (filters?: Record<string, any>, { rejectWithValue }) => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Import the client service to make the API call
+    const { getAllClients } = await import('../../services/clientService');
     
-    // Mock data
-    const mockClients: Client[] = [
-      {
-        id: '1',
-        type: 'individual',
-        firstName: 'John',
-        lastName: 'Smith',
-        contactInfo: {
-          email: 'john.smith@example.com',
-          phone: '555-123-4567',
-          address: {
-            street: '123 Main St',
-            city: 'Los Angeles',
-            state: 'CA',
-            zipCode: '90001',
-            country: 'USA',
-          },
-        },
-        cases: ['1'],
-        intakeDate: new Date().toISOString(),
-        kycVerified: true,
-        kycDocuments: [],
-        conflictCheckStatus: 'cleared',
-        notes: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        type: 'organization',
-        organizationName: 'Acme Corporation',
-        contactInfo: {
-          email: 'contact@acmecorp.com',
-          phone: '555-987-6543',
-          address: {
-            street: '456 Business Ave',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            country: 'USA',
-          },
-        },
-        cases: [],
-        intakeDate: new Date().toISOString(),
-        kycVerified: false,
-        kycDocuments: [],
-        conflictCheckStatus: 'pending',
-        notes: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    // Make the actual API call to get all clients with optional filters
+    const clients = await getAllClients(filters);
     
-    return mockClients;
+    return clients;
   } catch (error) {
+    console.error('Error fetching clients:', error);
     return rejectWithValue('Failed to fetch clients');
   }
 });
 
 export const fetchClientById = createAsyncThunk(
   'clients/fetchClientById',
-  async (clientId: string, { rejectWithValue, getState }) => {
+  async (clientId: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Import the client service to make the API call
+      const { getClientById } = await import('../../services/clientService');
       
-      // In a real app, we would make an API call here
-      // For now, we'll just find the client in our state
-      const state = getState() as { clients: ClientsState };
-      const foundClient = state.clients.clients.find(c => c.id === clientId);
+      // Make the actual API call to get the client
+      const client = await getClientById(clientId);
       
-      if (!foundClient) {
+      if (!client) {
         return rejectWithValue('Client not found');
       }
       
-      return foundClient;
+      return client;
     } catch (error) {
+      console.error(`Error fetching client ${clientId}:`, error);
       return rejectWithValue('Failed to fetch client details');
     }
   }

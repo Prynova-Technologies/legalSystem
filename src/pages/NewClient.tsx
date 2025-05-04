@@ -11,9 +11,9 @@ const NewClient: React.FC = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>New Client</h1>
-      </div>
+      {/* <div className="page-header">
+        <h4>New Client</h4>
+      </div> */}
       <NewClientForm onCancel={handleCancel} />
     </div>
   );

@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { fetchClientById, updateClient, deleteClient } from '../store/slices/clientsSlice';
+import { fetchClientById, updateClient, deleteClient, setCurrentClient } from '../store/slices/clientsSlice';
 import { fetchCases } from '../store/slices/casesSlice';
 import { fetchDocuments } from '../store/slices/documentsSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { Tabs, DetailView, DetailItem, DetailSection, StatusBadge, DataTable, Button } from '../components/common';
+import DocumentUploadModal from '../components/documents/DocumentUploadModal';
 import * as FaIcons from 'react-icons/fa';
 
 const ClientDetail: React.FC = () => {
@@ -14,18 +15,19 @@ const ClientDetail: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { currentClient, isLoading, error } = useSelector((state: RootState) => state.clients);
+  const { clients, currentClient, isLoading, error } = useSelector((state: RootState) => state.clients);
   const { cases } = useSelector((state: RootState) => state.cases);
   const { documents } = useSelector((state: RootState) => state.documents);
   
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditing, setIsEditing] = useState(false);
+  const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     firstName: '',
     lastName: '',
     organizationName: '',
     type: 'individual' as 'individual' | 'organization',
-    contactInfo: {
+    contacts: {
       email: '',
       phone: '',
       address: {
@@ -41,12 +43,36 @@ const ClientDetail: React.FC = () => {
   });
 
   useEffect(() => {
+    // Reset state when ID changes
     if (id) {
-      dispatch(fetchClientById(id) as any);
+      // Fetch related data
       dispatch(fetchCases() as any);
       dispatch(fetchDocuments() as any);
+    } else {
+      // Clear current client if no ID is provided
+      dispatch(setCurrentClient(null));
+    }
+    
+    // Reset active tab and editing state when changing clients
+    setActiveTab('overview');
+    setIsEditing(false);
+  }, [dispatch, id]);
+
+  // Handle client data loading
+  useEffect(() => {
+    if (id) {
+      // Always fetch the client directly from the API to ensure we have the latest data
+      dispatch(fetchClientById(id) as any);
     }
   }, [dispatch, id]);
+  
+  // Show error message if client couldn't be loaded
+  useEffect(() => {
+    if (error) {
+      // You could show a toast notification or error message here
+      console.error('Error loading client:', error);
+    }
+  }, [error]);
 
   useEffect(() => {
     if (currentClient) {
@@ -56,15 +82,9 @@ const ClientDetail: React.FC = () => {
         organizationName: currentClient.organizationName || '',
         type: currentClient.type,
         contactInfo: {
-          email: currentClient.contactInfo.email,
-          phone: currentClient.contactInfo.phone,
-          address: {
-            street: currentClient.contactInfo.address.street,
-            city: currentClient.contactInfo.address.city,
-            state: currentClient.contactInfo.address.state,
-            zipCode: currentClient.contactInfo.address.zipCode,
-            country: currentClient.contactInfo.address.country
-          }
+          email: currentClient.contacts.email,
+          phone: currentClient.contacts.phone,
+          address: currentClient.contacts.address,
         },
         kycVerified: currentClient.kycVerified,
         conflictCheckStatus: currentClient.conflictCheckStatus
@@ -175,8 +195,8 @@ const ClientDetail: React.FC = () => {
   const clientDocuments = documents.filter(doc => doc.clientId === id);
 
   const getClientName = () => {
-    return currentClient.type === 'individual' ?
-      `${currentClient.firstName} ${currentClient.lastName}` :
+    return currentClient.clientType === 'personal' ?
+      currentClient.fullName :
       currentClient.organizationName;
   };
 
@@ -184,31 +204,25 @@ const ClientDetail: React.FC = () => {
     <div className="client-detail-container">
       <div className="client-header">
         <div className="client-header-left">
-          <h1>{getClientName()}</h1>
-          <div className="client-meta">
-            <span className="client-type">{currentClient.type === 'individual' ? 'Individual' : 'Organization'}</span>
-            <span className={`status-badge ${currentClient.kycVerified ? 'status-verified' : 'status-unverified'}`}>
-              KYC: {currentClient.kycVerified ? 'Verified' : 'Unverified'}
-            </span>
-            <span className={`status-badge status-${currentClient.conflictCheckStatus}`}>
-              Conflict Check: {currentClient.conflictCheckStatus}
-            </span>
-          </div>
+          <h3>{getClientName()}</h3>
         </div>
-        <div className="client-header-actions">
+        <div style={{display: "flex", justifyContent: "space-between"}}>
+          <Button variant="secondary" onClick={() => navigate('/clients')}>
+            <FaIcons.FaArrowLeft />{" "}Back
+          </Button>
+          <div>
           {!isEditing && (
             <>
               <Button variant="secondary" onClick={handleEditToggle}>
                 <FaIcons.FaEdit /> Edit Client
               </Button>
+              <span>  </span>
               <Button variant="danger" onClick={handleDeleteClient}>
                 <FaIcons.FaTrash /> Delete Client
               </Button>
             </>
           )}
-          <Button variant="secondary" onClick={() => navigate('/clients')}>
-            <FaIcons.FaArrowLeft /> Back to Clients
-          </Button>
+          </div>
         </div>
       </div>
 
@@ -280,19 +294,19 @@ const ClientDetail: React.FC = () => {
                   type="email"
                   id="contactInfo.email"
                   name="contactInfo.email"
-                  value={editFormData.contactInfo.email}
+                  value={editFormData.contacts.email}
                   onChange={handleEditChange}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="contactInfo.phone">Phone</label>
+                <label htmlFor="contacts.phone">Phone</label>
                 <input
                   type="tel"
-                  id="contactInfo.phone"
-                  name="contactInfo.phone"
-                  value={editFormData.contactInfo.phone}
+                  id="contacts.phone"
+                  name="contacts.phone"
+                  value={editFormData.contacts.phone}
                   onChange={handleEditChange}
                   required
                 />
@@ -301,12 +315,12 @@ const ClientDetail: React.FC = () => {
 
             <h4>Address</h4>
             <div className="form-group">
-              <label htmlFor="contactInfo.address.street">Street</label>
+              <label htmlFor="contacts.address.street">Street</label>
               <input
                 type="text"
-                id="contactInfo.address.street"
-                name="contactInfo.address.street"
-                value={editFormData.contactInfo.address.street}
+                id="contacts.address.street"
+                name="contacts.address.street"
+                value={editFormData.contacts.address.street}
                 onChange={handleEditChange}
                 required
               />
@@ -314,24 +328,24 @@ const ClientDetail: React.FC = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="contactInfo.address.city">City</label>
+                <label htmlFor="contacts.address.city">City</label>
                 <input
                   type="text"
-                  id="contactInfo.address.city"
-                  name="contactInfo.address.city"
-                  value={editFormData.contactInfo.address.city}
+                  id="contacts.address.city"
+                  name="contacts.address.city"
+                  value={editFormData.contacts.address.city}
                   onChange={handleEditChange}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="contactInfo.address.state">State/Province</label>
+                <label htmlFor="contacts.address.state">State/Province</label>
                 <input
                   type="text"
-                  id="contactInfo.address.state"
-                  name="contactInfo.address.state"
-                  value={editFormData.contactInfo.address.state}
+                  id="contacts.address.state"
+                  name="contacts.address.state"
+                  value={editFormData.contacts.address.state}
                   onChange={handleEditChange}
                   required
                 />
@@ -340,24 +354,24 @@ const ClientDetail: React.FC = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="contactInfo.address.zipCode">Zip/Postal Code</label>
+                <label htmlFor="contacts.address.zipCode">Zip/Postal Code</label>
                 <input
                   type="text"
-                  id="contactInfo.address.zipCode"
-                  name="contactInfo.address.zipCode"
-                  value={editFormData.contactInfo.address.zipCode}
+                  id="contacts.address.zipCode"
+                  name="contacts.address.zipCode"
+                  value={editFormData.contacts.address.zipCode}
                   onChange={handleEditChange}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="contactInfo.address.country">Country</label>
+                <label htmlFor="contacts.address.country">Country</label>
                 <input
                   type="text"
-                  id="contactInfo.address.country"
-                  name="contactInfo.address.country"
-                  value={editFormData.contactInfo.address.country}
+                  id="contacts.address.country"
+                  name="contacts.address.country"
+                  value={editFormData.contacts.address.country}
                   onChange={handleEditChange}
                   required
                 />
@@ -410,7 +424,7 @@ const ClientDetail: React.FC = () => {
               { id: 'overview', label: 'Overview' },
               { id: 'cases', label: `Cases (${clientCases.length})` },
               { id: 'documents', label: `Documents (${clientDocuments.length})` },
-              { id: 'notes', label: `Notes (${currentClient.notes.length})` }
+              { id: 'notes', label: 'Client Note' }
             ]}
             activeTab={activeTab}
             onTabChange={handleTabChange}
@@ -426,9 +440,9 @@ const ClientDetail: React.FC = () => {
                   </Button>
                 }>
                   <DetailSection title="Client Information">
-                    <DetailItem label="Client Type" value={currentClient.type === 'individual' ? 'Individual' : 'Organization'} />
+                    <DetailItem label="Client Type" value={currentClient.clientType === 'personal' ? 'Individual' : 'Organization'} />
                     
-                    {currentClient.type === 'individual' ? (
+                    {currentClient.clientType === 'personal' ? (
                       <>
                         <DetailItem label="First Name" value={currentClient.firstName} />
                         <DetailItem label="Last Name" value={currentClient.lastName} />
@@ -441,20 +455,11 @@ const ClientDetail: React.FC = () => {
                   </DetailSection>
 
                   <DetailSection title="Contact Information">
-                    <DetailItem label="Email" value={currentClient.contactInfo.email} />
-                    <DetailItem label="Phone" value={currentClient.contactInfo.phone} />
-                    <DetailItem 
-                      label="Address" 
-                      value={
-                        <div className="address-value">
-                          <div>{currentClient.contactInfo.address.street}</div>
-                          <div>
-                            {currentClient.contactInfo.address.city}, {currentClient.contactInfo.address.state} {currentClient.contactInfo.address.zipCode}
-                          </div>
-                          <div>{currentClient.contactInfo.address.country}</div>
-                        </div>
-                      } 
-                    />
+                    {
+                      currentClient.contacts.map(c => {
+                        return <DetailItem key={c._id} label={c.type} value={c.value} />
+                      })
+                    }
                   </DetailSection>
 
                   <DetailSection title="Verification Status">
@@ -470,7 +475,7 @@ const ClientDetail: React.FC = () => {
                       label="Conflict Check" 
                       value={
                         <StatusBadge 
-                          status={currentClient.conflictCheckStatus} 
+                          status={currentClient.conflictCheckStatus === undefined ? 'pending' : currentClient.conflictCheckStatus} 
                         />
                       } 
                     />
@@ -550,12 +555,18 @@ const ClientDetail: React.FC = () => {
                   actions={
                     <Button 
                       variant="primary" 
-                      onClick={() => navigate(`/documents/upload?clientId=${id}`)}
+                      onClick={() => setIsDocumentUploadModalOpen(true)}
                     >
                       <FaIcons.FaUpload /> Upload Document
                     </Button>
                   }
                 >
+                  {/* Document Upload Modal */}
+                  <DocumentUploadModal 
+                    isOpen={isDocumentUploadModalOpen}
+                    onClose={() => setIsDocumentUploadModalOpen(false)}
+                    clientId={id}
+                  />
                   {clientDocuments.length > 0 ? (
                     <div className="documents-list">
                       {clientDocuments.map(doc => (
@@ -620,20 +631,10 @@ const ClientDetail: React.FC = () => {
                     </form>
                   </div>
                   
-                  <DetailSection title="Previous Notes">
-                    {currentClient.notes.length > 0 ? (
-                      currentClient.notes.map(note => (
-                        <div key={note.id} className="note-item">
-                          <div className="note-content">{note.content}</div>
-                          <div className="note-meta">
-                            <span>Created: {formatDate(note.createdAt)}</span>
-                            <span>By: User ID {note.createdBy}</span>
+                  <DetailSection title="Clien Note">
+                          <div className="note-item">
+                            <div className="note-content">{currentClient.note}</div>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="empty-state">No notes for this client</p>
-                    )}
                   </DetailSection>
                 </DetailView>
               </div>
