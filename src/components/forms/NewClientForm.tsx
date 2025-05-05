@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store';
 import DataForm, { FormSection } from '../common/Form';
 import { toast } from 'react-toastify';
-import { createClient } from '../../services/clientService';
+import { createClient } from '../../store/slices/clientsSlice';
 import { User } from '../../services/userService';
 import './FormStyles.css';
-type ClientType = 'personal' | 'organization';
+type ClientType = 'individual' | 'organization';
 
 interface NewClientFormProps {
   onCancel: () => void;
@@ -13,9 +15,10 @@ interface NewClientFormProps {
 
 const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
 
-  const [clientType, setClientType] = useState<ClientType>('personal');
+  const [clientType, setClientType] = useState<ClientType>('individual');
 
   const handleClientTypeChange = (value: string) => {
     setClientType(value as ClientType);
@@ -43,10 +46,18 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
         });
       }
       
-      if (formData.address) {
+      // Combine address fields into a structured format
+      if (formData.street || formData.city || formData.country || formData.postalCode) {
+        const addressParts = {
+          street: formData.street || '',
+          city: formData.city || '',
+          country: formData.country || '',
+          postalCode: formData.postalCode || ''
+        };
+        
         contacts.push({
           type: 'address',
-          value: formData.address
+          value: JSON.stringify(addressParts)
         });
       }
 
@@ -69,10 +80,17 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
         });
       }
 
-      if (clientType === 'organization' && formData.companyAddress) {
+      if (clientType === 'organization' && (formData.companyStreet || formData.companyCity || formData.companyCountry || formData.companyPostalCode)) {
+        const companyAddressParts = {
+          street: formData.companyStreet || '',
+          city: formData.companyCity || '',
+          country: formData.companyCountry || '',
+          postalCode: formData.companyPostalCode || ''
+        };
+        
         contacts.push({
           type: 'address',
-          value: formData.companyAddress,
+          value: JSON.stringify(companyAddressParts),
           label: 'Company Address'
         });
       }
@@ -81,10 +99,10 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
       const clientData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        clientType: formData.clientType,
+        clientType,
         company: formData.company || undefined,
-        dateOfBirth: clientType === 'personal' ? formData.dateOfBirth || undefined : undefined,
-        maritalStatus: clientType === 'personal' ? formData.maritalStatus || undefined : undefined,
+        dateOfBirth: clientType === 'individual' ? formData.dateOfBirth || undefined : undefined,
+        maritalStatus: clientType === 'individual' ? formData.maritalStatus || undefined : undefined,
         contacts,
         primaryAttorney: formData.primaryAttorney || undefined,
         referralSource: formData.referralSource || undefined,
@@ -97,11 +115,16 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
         conflictCheckNotes: undefined
       };
       
-      // Use client service to create client
-      const result = await createClient(clientData);
+      // Use Redux thunk to create client
+      const resultAction = await dispatch(createClient(clientData));
       
-      toast.success('Client created successfully');
-      navigate(`/clients/${result._id}`);
+      if (createClient.fulfilled.match(resultAction)) {
+        console.log(resultAction)
+        toast.success('Client created successfully');
+        navigate(`/clients/${resultAction.payload.id}`);
+      } else {
+        throw new Error(resultAction.error.message || 'Failed to create client');
+      }
     } catch (error) {
       console.error('Error creating client:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create client');
@@ -133,7 +156,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
           label: 'Client Type',
           type: 'select',
           options: [
-            { value: 'personal', label: 'Personal' },
+            { value: 'individual', label: 'Individual' },
             { value: 'organization', label: 'Organization' }
           ],
           required: true
@@ -147,14 +170,14 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
       fields: [
         {
           id: 'firstName',
-          label: 'First Name',
+          label: clientType === 'individual' ? 'First Name' : 'Contact Person First Name',
           type: 'text',
           placeholder: 'Enter first name',
           required: true
         },
         {
           id: 'lastName',
-          label: 'Last Name',
+          label: clientType === 'individual' ? 'Last Name' : 'Contact Person Last Name',
           type: 'text',
           placeholder: 'Enter last name',
           required: true
@@ -162,8 +185,8 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
       ]
     };
 
-    // Add personal client fields
-    if (clientType === 'personal') {
+    // Add individual client fields
+    if (clientType === 'individual') {
       basicInfoSection.fields.push(
         {
           id: 'dateOfBirth',
@@ -219,22 +242,61 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
           validation: validateEmail
         },
         {
-          id: 'address',
-          label: 'Address',
-          type: 'textarea',
-          placeholder: 'Enter address'
+          id: 'street',
+          label: 'Street Address',
+          type: 'text',
+          placeholder: 'Enter street address'
+        },
+        {
+          id: 'city',
+          label: 'City',
+          type: 'text',
+          placeholder: 'Enter city'
+        },
+        {
+          id: 'country',
+          label: 'Country',
+          type: 'text',
+          placeholder: 'Enter country'
+        },
+        {
+          id: 'postalCode',
+          label: 'Postal Code',
+          type: 'text',
+          placeholder: 'Enter postal code'
         }
       ]
     };
     
     // Add company contact fields for organization
     if (clientType === 'organization') {
-      contactInfoSection.fields.push(
+      contactInfoSection.fields = [
         {
-          id: 'companyAddress',
-          label: 'Company Address',
-          type: 'textarea',
-          placeholder: 'Enter company address',
+          id: 'companyStreet',
+          label: 'Company Street Address',
+          type: 'text',
+          placeholder: 'Enter company street address',
+          required: true
+        },
+        {
+          id: 'companyCity',
+          label: 'Company City',
+          type: 'text',
+          placeholder: 'Enter company city',
+          required: true
+        },
+        {
+          id: 'companyCountry',
+          label: 'Company Country',
+          type: 'text',
+          placeholder: 'Enter company country',
+          required: true
+        },
+        {
+          id: 'companyPostalCode',
+          label: 'Company Postal Code',
+          type: 'text',
+          placeholder: 'Enter company postal code',
           required: true
         },
         {
@@ -251,7 +313,7 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
           placeholder: 'Enter company phone number',
           validation: validatePhone
         }
-      );
+      ];
     }
     
     const formSections: FormSection[] = [clientTypeSection, basicInfoSection, contactInfoSection,

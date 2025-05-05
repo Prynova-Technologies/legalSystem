@@ -174,7 +174,7 @@ export const getClientById = async (clientId: string): Promise<Client> => {
 export const updateClient = async (clientId: string, clientData: Partial<Client>): Promise<Client> => {
   try {
     return await fetchWithAuth<Client>(API_ENDPOINTS.CLIENTS.DETAIL(clientId), {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(clientData)
     });
   } catch (error) {

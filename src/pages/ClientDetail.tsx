@@ -7,15 +7,17 @@ import { fetchCases } from '../store/slices/casesSlice';
 import { fetchDocuments } from '../store/slices/documentsSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { Tabs, DetailView, DetailItem, DetailSection, StatusBadge, DataTable, Button } from '../components/common';
-import DocumentUploadModal from '../components/documents/DocumentUploadModal';
+import { DocumentCard, DocumentUploadModal } from '../components/documents';
 import * as FaIcons from 'react-icons/fa';
+import './ClientDetail.css';
 
 const ClientDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { clients, currentClient, isLoading, error } = useSelector((state: RootState) => state.clients);
+  const { clients, isLoading, error } = useSelector((state: RootState) => state.clients);
+  const currentClient = clients.find(client => client.id === id);
   const { cases } = useSelector((state: RootState) => state.cases);
   const { documents } = useSelector((state: RootState) => state.documents);
   
@@ -26,20 +28,16 @@ const ClientDetail: React.FC = () => {
     firstName: '',
     lastName: '',
     organizationName: '',
-    type: 'individual' as 'individual' | 'organization',
-    contacts: {
-      email: '',
-      phone: '',
-      address: {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: ''
-      }
-    },
+    clientType: 'individual' as 'individual' | 'organization',
+    contacts: [] as Array<{
+      _id?: string;
+      type: 'email' | 'phone' | 'address' | 'other';
+      value: string;
+      isPrimary?: boolean;
+    }>,
     kycVerified: false,
-    conflictCheckStatus: 'pending' as 'pending' | 'cleared' | 'flagged'
+    conflictCheckStatus: 'flagged',
+    note: ''
   });
 
   useEffect(() => {
@@ -59,12 +57,12 @@ const ClientDetail: React.FC = () => {
   }, [dispatch, id]);
 
   // Handle client data loading
-  useEffect(() => {
-    if (id) {
-      // Always fetch the client directly from the API to ensure we have the latest data
-      dispatch(fetchClientById(id) as any);
-    }
-  }, [dispatch, id]);
+  // useEffect(() => {
+  //   if (id) {
+  //     // Always fetch the client directly from the API to ensure we have the latest data
+  //     dispatch(fetchClientById(id) as any);
+  //   }
+  // }, [dispatch, id]);
   
   // Show error message if client couldn't be loaded
   useEffect(() => {
@@ -76,18 +74,41 @@ const ClientDetail: React.FC = () => {
 
   useEffect(() => {
     if (currentClient) {
+      // Find contact values or use empty objects
+      const emailContact = currentClient.contactInfo?.find(c => c.type === 'email') || { _id: '', value: '', type: 'email' };
+      const phoneContact = currentClient.contactInfo?.find(c => c.type === 'phone') || { _id: '', value: '', type: 'phone' };
+      const addressContact = currentClient.contactInfo?.find(c => c.type === 'address') || { _id: '', value: JSON.stringify({ street: '', city: '', country: '', postalCode: '' }), type: 'address' };
+      
+      // Ensure address contact value is valid JSON
+      let addressValue = addressContact.value;
+      try {
+        // Test if it's already valid JSON
+        JSON.parse(addressValue);
+      } catch (e) {
+        // If not valid JSON, convert the string to a structured format
+        addressValue = JSON.stringify({ 
+          street: addressValue || '',
+          city: '', 
+          country: '', 
+          postalCode: '' 
+        });
+      }
+
+      console.log(currentClient)
+      
       setEditFormData({
         firstName: currentClient.firstName || '',
         lastName: currentClient.lastName || '',
         organizationName: currentClient.organizationName || '',
-        type: currentClient.type,
-        contactInfo: {
-          email: currentClient.contacts.email,
-          phone: currentClient.contacts.phone,
-          address: currentClient.contacts.address,
-        },
+        clientType: currentClient.type || 'individual',
+        contacts: [
+          { _id: emailContact._id, type: 'email', value: emailContact.value, isPrimary: emailContact.isPrimary },
+          { _id: phoneContact._id, type: 'phone', value: phoneContact.value, isPrimary: phoneContact.isPrimary },
+          { _id: addressContact._id, type: 'address', value: addressValue, isPrimary: addressContact.isPrimary }
+        ],
         kycVerified: currentClient.kycVerified,
-        conflictCheckStatus: currentClient.conflictCheckStatus
+        conflictCheckStatus: currentClient.conflictCheckStatus,
+        note: currentClient.notes || ''
       });
     }
   }, [currentClient]);
@@ -103,38 +124,34 @@ const ClientDetail: React.FC = () => {
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Handle nested properties
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      if (parent === 'contactInfo') {
-        if (child.includes('.')) {
-          const [addressParent, addressChild] = child.split('.');
-          if (addressParent === 'address') {
-            setEditFormData({
-              ...editFormData,
-              contactInfo: {
-                ...editFormData.contactInfo,
-                address: {
-                  ...editFormData.contactInfo.address,
-                  [addressChild]: value
-                }
-              }
-            });
-          }
-        } else {
-          setEditFormData({
-            ...editFormData,
-            contactInfo: {
-              ...editFormData.contactInfo,
-              [child]: value
-            }
-          });
-        }
+    // Handle nested properties for contacts
+    if (name.startsWith('contacts.')) {
+      const [_, contactType, field] = name.split('.');
+      const updatedContacts = [...editFormData.contacts];
+      const contactIndex = updatedContacts.findIndex(c => c.type === contactType);
+      
+      if (contactIndex !== -1) {
+        updatedContacts[contactIndex] = {
+          ...updatedContacts[contactIndex],
+          value: value
+        };
+      } else {
+        // If contact doesn't exist, create a new one
+        updatedContacts.push({
+          type: contactType as 'email' | 'phone' | 'address' | 'other',
+          value: value,
+          isPrimary: false
+        });
       }
+      
+      setEditFormData({
+        ...editFormData,
+        contacts: updatedContacts
+      });
     } else if (name === 'kycVerified') {
       setEditFormData({
         ...editFormData,
-        kycVerified: (e.target as HTMLInputElement).checked
+        kycVerified: !currentClient.kycVerified
       });
     } else {
       setEditFormData({
@@ -143,18 +160,73 @@ const ClientDetail: React.FC = () => {
       });
     }
   };
+  
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const [_, contactType, field] = name.split('.');
+    
+    const updatedContacts = [...editFormData.contacts];
+    const contactIndex = updatedContacts.findIndex(c => c.type === contactType);
+    
+    let addressData = {};
+    try {
+      // Parse existing address data or create empty object if it doesn't exist
+      addressData = contactIndex !== -1 ? 
+        JSON.parse(updatedContacts[contactIndex].value || '{}') : 
+        { street: '', city: '', country: '', postalCode: '' };
+    } catch (error) {
+      // If parsing fails, create a new object
+      addressData = { street: '', city: '', country: '', postalCode: '' };
+    }
+    
+    // Update the specific field
+    addressData = {
+      ...addressData,
+      [field]: value
+    };
+    
+    if (contactIndex !== -1) {
+      // Update existing contact
+      updatedContacts[contactIndex] = {
+        ...updatedContacts[contactIndex],
+        value: JSON.stringify(addressData)
+      };
+    } else {
+      // Create new contact
+      updatedContacts.push({
+        type: contactType as 'address',
+        value: JSON.stringify(addressData),
+        isPrimary: false
+      });
+    }
+    
+    setEditFormData({
+      ...editFormData,
+      contacts: updatedContacts
+    });
+  };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (id && currentClient) {
       try {
+        // Format the client data to match the API expectations
+        const clientData = {
+          firstName: editFormData.firstName,
+          lastName: editFormData.lastName,
+          organizationName: editFormData.organizationName,
+          clientType: editFormData.clientType,
+          contacts: editFormData.contacts.filter(c => c.value.trim() !== ''),
+          kycVerified: editFormData.kycVerified,
+          conflictCheckStatus: editFormData.conflictCheckStatus === 'cleared' ? true : false,
+          note: editFormData.note
+        };
+        
         await dispatch(updateClient({
           clientId: id,
-          clientData: {
-            ...editFormData,
-            type: editFormData.type as 'individual' | 'organization'
-          }
+          clientData: clientData
         }) as any);
+        
         setIsEditing(false);
       } catch (error) {
         console.error('Failed to update client:', error);
@@ -163,7 +235,7 @@ const ClientDetail: React.FC = () => {
   };
 
   const handleDeleteClient = async () => {
-    if (id && window.confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+    if (id) {
       try {
         await dispatch(deleteClient(id) as any);
         navigate('/clients');
@@ -191,12 +263,12 @@ const ClientDetail: React.FC = () => {
   }
 
   // Filter client-related cases and documents
-  const clientCases = cases.filter(c => c.clientId === id);
-  const clientDocuments = documents.filter(doc => doc.clientId === id);
+  const clientCases = cases?.filter(c => c.clientId === id);
+  const clientDocuments = documents.data?.filter(doc => doc.client?._id === id);
 
   const getClientName = () => {
-    return currentClient.clientType === 'personal' ?
-      currentClient.fullName :
+    return currentClient.clientType === 'individual' ?
+      currentClient.firstName + " " + currentClient.lastName :
       currentClient.organizationName;
   };
 
@@ -231,20 +303,20 @@ const ClientDetail: React.FC = () => {
           <h2>Edit Client</h2>
           <form onSubmit={handleEditSubmit} className="edit-client-form">
             <div className="form-group">
-              <label htmlFor="type">Client Type</label>
+              <label htmlFor="clientType">Client Type</label>
               <select
-                id="type"
-                name="type"
-                value={editFormData.type}
+                id="clientType"
+                name="clientType"
+                value={editFormData.clientType}
                 onChange={handleEditChange}
                 required
               >
-                <option value="individual">Individual</option>
+                <option value="personal">Individual</option>
                 <option value="organization">Organization</option>
               </select>
             </div>
 
-            {editFormData.type === 'individual' ? (
+            {editFormData.clientType === 'personal' ? (
               <>
                 <div className="form-row">
                   <div className="form-group">
@@ -289,24 +361,24 @@ const ClientDetail: React.FC = () => {
             <h3>Contact Information</h3>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="contactInfo.email">Email</label>
+                <label htmlFor="contacts.email.value">Email</label>
                 <input
                   type="email"
-                  id="contactInfo.email"
-                  name="contactInfo.email"
-                  value={editFormData.contacts.email}
+                  id="contacts.email.value"
+                  name="contacts.email.value"
+                  value={editFormData.contacts.find(c => c.type === 'email')?.value || ''}
                   onChange={handleEditChange}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="contacts.phone">Phone</label>
+                <label htmlFor="contacts.phone.value">Phone</label>
                 <input
                   type="tel"
-                  id="contacts.phone"
-                  name="contacts.phone"
-                  value={editFormData.contacts.phone}
+                  id="contacts.phone.value"
+                  name="contacts.phone.value"
+                  value={editFormData.contacts.find(c => c.type === 'phone')?.value || ''}
                   onChange={handleEditChange}
                   required
                 />
@@ -314,65 +386,50 @@ const ClientDetail: React.FC = () => {
             </div>
 
             <h4>Address</h4>
-            <div className="form-group">
-              <label htmlFor="contacts.address.street">Street</label>
-              <input
-                type="text"
-                id="contacts.address.street"
-                name="contacts.address.street"
-                value={editFormData.contacts.address.street}
-                onChange={handleEditChange}
-                required
-              />
-            </div>
-
             <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="contacts.address.street">Street Address</label>
+                <input
+                  type="text"
+                  id="contacts.address.street"
+                  name="contacts.address.street"
+                  value={JSON.parse(editFormData.contacts.find(c => c.type === 'address')?.value || '{"street":""}').street}
+                  onChange={handleAddressChange}
+                  required
+                />
+              </div>
               <div className="form-group">
                 <label htmlFor="contacts.address.city">City</label>
                 <input
                   type="text"
                   id="contacts.address.city"
                   name="contacts.address.city"
-                  value={editFormData.contacts.address.city}
-                  onChange={handleEditChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="contacts.address.state">State/Province</label>
-                <input
-                  type="text"
-                  id="contacts.address.state"
-                  name="contacts.address.state"
-                  value={editFormData.contacts.address.state}
-                  onChange={handleEditChange}
+                  value={JSON.parse(editFormData.contacts.find(c => c.type === 'address')?.value || '{"city":""}').city}
+                  onChange={handleAddressChange}
                   required
                 />
               </div>
             </div>
-
             <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="contacts.address.zipCode">Zip/Postal Code</label>
-                <input
-                  type="text"
-                  id="contacts.address.zipCode"
-                  name="contacts.address.zipCode"
-                  value={editFormData.contacts.address.zipCode}
-                  onChange={handleEditChange}
-                  required
-                />
-              </div>
-
               <div className="form-group">
                 <label htmlFor="contacts.address.country">Country</label>
                 <input
                   type="text"
                   id="contacts.address.country"
                   name="contacts.address.country"
-                  value={editFormData.contacts.address.country}
-                  onChange={handleEditChange}
+                  value={JSON.parse(editFormData.contacts.find(c => c.type === 'address')?.value || '{"country":""}').country}
+                  onChange={handleAddressChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="contacts.address.postalCode">Postal Code</label>
+                <input
+                  type="text"
+                  id="contacts.address.postalCode"
+                  name="contacts.address.postalCode"
+                  value={JSON.parse(editFormData.contacts.find(c => c.type === 'address')?.value || '{"postalCode":""}').postalCode}
+                  onChange={handleAddressChange}
                   required
                 />
               </div>
@@ -400,11 +457,23 @@ const ClientDetail: React.FC = () => {
                   onChange={handleEditChange}
                   required
                 >
-                  <option value="pending">Pending</option>
                   <option value="cleared">Cleared</option>
                   <option value="flagged">Flagged</option>
                 </select>
               </div>
+            </div>
+            
+            <h3>Client Notes</h3>
+            <div className="form-group">
+              <label htmlFor="note">Notes</label>
+              <textarea
+                id="note"
+                name="note"
+                value={editFormData.note}
+                onChange={handleEditChange}
+                rows={4}
+                className="form-textarea"
+              />
             </div>
 
             <div className="form-actions">
@@ -422,8 +491,8 @@ const ClientDetail: React.FC = () => {
           <Tabs
             tabs={[
               { id: 'overview', label: 'Overview' },
-              { id: 'cases', label: `Cases (${clientCases.length})` },
-              { id: 'documents', label: `Documents (${clientDocuments.length})` },
+              { id: 'cases', label: `Cases (${clientCases?.length})` },
+              { id: 'documents', label: `Documents (${clientDocuments?.length})` },
               { id: 'notes', label: 'Client Note' }
             ]}
             activeTab={activeTab}
@@ -440,9 +509,9 @@ const ClientDetail: React.FC = () => {
                   </Button>
                 }>
                   <DetailSection title="Client Information">
-                    <DetailItem label="Client Type" value={currentClient.clientType === 'personal' ? 'Individual' : 'Organization'} />
+                    <DetailItem label="Client Type" value={currentClient.type === 'individual' ? 'Individual' : 'Organization'} />
                     
-                    {currentClient.clientType === 'personal' ? (
+                    {currentClient.type === 'individual' ? (
                       <>
                         <DetailItem label="First Name" value={currentClient.firstName} />
                         <DetailItem label="Last Name" value={currentClient.lastName} />
@@ -456,8 +525,33 @@ const ClientDetail: React.FC = () => {
 
                   <DetailSection title="Contact Information">
                     {
-                      currentClient.contacts.map(c => {
-                        return <DetailItem key={c._id} label={c.type} value={c.value} />
+                      currentClient.contactInfo.map(c => {
+                        if (c.type === 'address') {
+                          return (
+                            <DetailItem key={c._id} label={c.type}>
+                              {(() => {
+                                try {
+                                  const addressData = JSON.parse(c.value);
+                                  return (
+                                    <div style={{display: 'flex'}}>
+                                      {addressData.street && <div>{addressData.street}, </div>}
+                                      {addressData.city && addressData.postalCode && (
+                                        <div>{addressData.city}, {addressData.postalCode}, </div>
+                                      )}
+                                      {addressData.country && <div>{addressData.country}</div>}
+                                      {!addressData.street && !addressData.city && !addressData.country && !addressData.postalCode && 'No address provided'}
+                                    </div>
+                                  );
+                                } catch (e) {
+                                  // Fallback for legacy address format
+                                  return c.value || 'No address provided';
+                                }
+                              })()}
+                            </DetailItem>
+                          );
+                        } else {
+                          return <DetailItem key={c._id} label={c.type} value={c.value} />;
+                        }
                       })
                     }
                   </DetailSection>
@@ -477,22 +571,6 @@ const ClientDetail: React.FC = () => {
                         <StatusBadge 
                           status={currentClient.conflictCheckStatus === undefined ? 'pending' : currentClient.conflictCheckStatus} 
                         />
-                      } 
-                    />
-                    <DetailItem 
-                      label="KYC Documents" 
-                      value={
-                        currentClient.kycDocuments.length > 0 ? (
-                          <ul className="document-list">
-                            {currentClient.kycDocuments.map(doc => (
-                              <li key={doc.id}>
-                                <a href={doc.url} target="_blank" rel="noopener noreferrer">{doc.name}</a>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          "No KYC documents uploaded"
-                        )
                       } 
                     />
                   </DetailSection>
@@ -568,36 +646,21 @@ const ClientDetail: React.FC = () => {
                     clientId={id}
                   />
                   {clientDocuments.length > 0 ? (
-                    <div className="documents-list">
+                    <div className="documents-grid">
                       {clientDocuments.map(doc => (
-                        <div key={doc.id} className="document-item">
-                          <div className="document-icon"><FaIcons.FaFile /></div>
-                          <div className="document-info">
-                            <h4 className="document-title">{doc.name}</h4>
-                            <p className="document-description">{doc.description}</p>
-                            <div className="document-meta">
-                              <span>Type: {doc.fileType}</span>
-                              <span>Size: {(doc.size / 1024).toFixed(2)} KB</span>
-                              <span>Uploaded: {formatDate(doc.uploadedAt)}</span>
-                            </div>
-                          </div>
-                          <div className="document-actions">
-                            <Button 
-                              variant="primary" 
-                              size="small"
-                              onClick={() => window.open(doc.url, '_blank')}
-                            >
-                              <FaIcons.FaEye /> View
-                            </Button>
-                            <Button 
-                              variant="secondary" 
-                              size="small"
-                              onClick={() => navigate(`/documents/${doc.id}`)}
-                            >
-                              <FaIcons.FaInfoCircle /> Details
-                            </Button>
-                          </div>
-                        </div>
+                        <DocumentCard
+                          key={doc._id}
+                          document={doc}
+                          onPreview={() => window.open(doc.versions[0].filePath, '_blank')}
+                          // onEdit={() => navigate(`/documents/${doc._id}`)}
+                          onDownload={() => window.open(doc.versions[0].filePath, '_blank')}
+                          onDelete={() => {
+                            if (window.confirm('Are you sure you want to delete this document?')) {
+                              // Handle document deletion logic here
+                              console.log('Delete document:', doc._id);
+                            }
+                          }}
+                        />
                       ))}
                     </div>
                   ) : (

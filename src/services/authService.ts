@@ -53,15 +53,13 @@ const authService = {
     try {
       // Make API call to backend authentication endpoint
       const response = await api.post('/auth/login', { email, password });
-      console.log(response)
       // Validate response - ensure we have a token
-      if (!response.data || !response.data.token) {
-        console.log(response)
+      if (!response.data || !response.token) {
         throw new Error('Invalid response from server. Authentication failed.');
       }
       
       // Store token in localStorage
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('token', response.token);
       
       return response.data;
     } catch (error: any) {

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Document, DocumentCategory } from '../../types';
-import { v4 as uuidv4 } from 'uuid';
+import { fetchAllDocuments, createDocument, updateDocument as updateDocumentApi, deleteDocument as deleteDocumentApi } from '../../services/documentService';
 
 interface DocumentsState {
   documents: Document[];
@@ -30,47 +30,11 @@ const initialState: DocumentsState = {
   },
 };
 
-// Mock API calls - would be replaced with actual API calls
+// Fetch documents from API
 export const fetchDocuments = createAsyncThunk('documents/fetchDocuments', async (_, { rejectWithValue }) => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock data
-    const mockDocuments: Document[] = [
-      {
-        id: '1',
-        name: 'Complaint.pdf',
-        description: 'Initial complaint filing',
-        fileType: 'application/pdf',
-        size: 1024 * 1024 * 2, // 2MB
-        url: 'https://example.com/documents/complaint.pdf',
-        caseId: '1',
-        tags: ['complaint', 'filing'],
-        category: DocumentCategory.PLEADING,
-        version: 1,
-        uploadedBy: '1',
-        uploadedAt: new Date().toISOString(),
-        lastModifiedAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        name: 'Client ID.pdf',
-        description: 'Client identification document',
-        fileType: 'application/pdf',
-        size: 1024 * 1024, // 1MB
-        url: 'https://example.com/documents/client-id.pdf',
-        clientId: '1',
-        tags: ['identification', 'kyc'],
-        category: DocumentCategory.KYC,
-        version: 1,
-        uploadedBy: '1',
-        uploadedAt: new Date().toISOString(),
-        lastModifiedAt: new Date().toISOString(),
-      },
-    ];
-    
-    return mockDocuments;
+    const response = await fetchAllDocuments();
+    return response;
   } catch (error) {
     return rejectWithValue('Failed to fetch documents');
   }
@@ -101,30 +65,12 @@ export const fetchDocumentById = createAsyncThunk(
 
 export const uploadDocument = createAsyncThunk(
   'documents/uploadDocument',
-  async (documentData: Partial<Document>, { rejectWithValue }) => {
+  async (documentData: Partial<Document>, { dispatch, rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const now = new Date().toISOString();
-      const newDocument: Document = {
-        id: uuidv4(),
-        name: documentData.name || 'Untitled Document',
-        description: documentData.description || '',
-        fileType: documentData.fileType || 'application/pdf',
-        size: documentData.size || 0,
-        url: documentData.url || `https://example.com/documents/${uuidv4()}`,
-        caseId: documentData.caseId,
-        clientId: documentData.clientId,
-        tags: documentData.tags || [],
-        category: documentData.category || DocumentCategory.OTHER,
-        version: 1,
-        uploadedBy: documentData.uploadedBy || '1', // Current user ID would be used here
-        uploadedAt: now,
-        lastModifiedAt: now,
-      };
-      
-      return newDocument;
+      const response = await createDocument(documentData);
+      // Refresh the documents list after successful upload
+      await dispatch(fetchDocuments());
+      return response;
     } catch (error) {
       return rejectWithValue('Failed to upload document');
     }
@@ -133,30 +79,12 @@ export const uploadDocument = createAsyncThunk(
 
 export const updateDocument = createAsyncThunk(
   'documents/updateDocument',
-  async ({ documentId, documentData }: { documentId: string; documentData: Partial<Document> }, { rejectWithValue, getState }) => {
+  async ({ documentId, documentData }: { documentId: string; documentData: Partial<Document> }, { dispatch, rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const state = getState() as { documents: DocumentsState };
-      const existingDocument = state.documents.documents.find(d => d.id === documentId);
-      
-      if (!existingDocument) {
-        return rejectWithValue('Document not found');
-      }
-      
-      const now = new Date().toISOString();
-      const updatedDocument: Document = {
-        ...existingDocument,
-        ...documentData,
-        version: existingDocument.version + 1,
-        previousVersions: existingDocument.previousVersions 
-          ? [...existingDocument.previousVersions, existingDocument.url]
-          : [existingDocument.url],
-        lastModifiedAt: now,
-      };
-      
-      return updatedDocument;
+      const response = await updateDocumentApi(documentId, documentData);
+      // Refresh the documents list after successful update
+      await dispatch(fetchDocuments());
+      return response;
     } catch (error) {
       return rejectWithValue('Failed to update document');
     }
@@ -165,11 +93,11 @@ export const updateDocument = createAsyncThunk(
 
 export const deleteDocument = createAsyncThunk(
   'documents/deleteDocument',
-  async (documentId: string, { rejectWithValue }) => {
+  async (documentId: string, { dispatch, rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await deleteDocumentApi(documentId);
+      // Refresh the documents list after successful deletion
+      await dispatch(fetchDocuments());
       return documentId;
     } catch (error) {
       return rejectWithValue('Failed to delete document');

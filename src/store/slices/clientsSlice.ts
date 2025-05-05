@@ -28,7 +28,7 @@ const initialState: ClientsState = {
   },
 };
 
-// Mock API calls - would be replaced with actual API calls
+// Fetch clients from the API
 export const fetchClients = createAsyncThunk('clients/fetchClients', async (filters?: Record<string, any>, { rejectWithValue }) => {
   try {
     // Import the client service to make the API call
@@ -37,7 +37,35 @@ export const fetchClients = createAsyncThunk('clients/fetchClients', async (filt
     // Make the actual API call to get all clients with optional filters
     const clients = await getAllClients(filters);
     
-    return clients;
+    // Map API response to our Client type if needed
+    const mappedClients = Array.isArray(clients) ? clients.map(client => ({
+      id: client._id,
+      type: client.clientType || 'individual',
+      firstName: client.firstName || '',
+      lastName: client.lastName || '',
+      organizationName: client.company || '',
+      contactInfo: client.contacts || {
+        email: '',
+        phone: '',
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: '',
+        },
+      },
+      cases: client.cases || [],
+      intakeDate: client.intakeDate || client.createdAt,
+      kycVerified: client.kycVerified,
+      kycDocuments: client.documents || [],
+      conflictCheckStatus: client.conflictCheckStatus ? 'cleared' : 'flagged',
+      notes: client.notes || [],
+      createdAt: client.createdAt,
+      updatedAt: client.updatedAt,
+    })) : [];
+    
+    return mappedClients;
   } catch (error) {
     console.error('Error fetching clients:', error);
     return rejectWithValue('Failed to fetch clients');
@@ -58,7 +86,35 @@ export const fetchClientById = createAsyncThunk(
         return rejectWithValue('Client not found');
       }
       
-      return client;
+      // Map API response to our Client type
+      const mappedClient: Client = {
+        id: client._id,
+        type: client.type || 'individual',
+        firstName: client.firstName || '',
+        lastName: client.lastName || '',
+        organizationName: client.company || '',
+        contactInfo: client.contactInfo || {
+          email: '',
+          phone: '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: '',
+          },
+        },
+        cases: client.cases || [],
+        intakeDate: client.intakeDate || client.createdAt || new Date().toISOString(),
+        kycVerified: client.kycVerified || false,
+        kycDocuments: client.kycDocuments || [],
+        conflictCheckStatus: client.conflictCheckStatus ? 'cleared' : 'flagged',
+        notes: client.notes || [],
+        createdAt: client.createdAt || new Date().toISOString(),
+        updatedAt: client.updatedAt || new Date().toISOString(),
+      };
+      
+      return mappedClient;
     } catch (error) {
       console.error(`Error fetching client ${clientId}:`, error);
       return rejectWithValue('Failed to fetch client details');
@@ -70,17 +126,20 @@ export const createClient = createAsyncThunk(
   'clients/createClient',
   async (clientData: Partial<Client>, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Import the client service to make the API call
+      const { createClient: createClientService } = await import('../../services/clientService');
       
-      const now = new Date().toISOString();
-      const newClient: Client = {
-        id: uuidv4(),
-        type: clientData.type || 'individual',
-        firstName: clientData.firstName || '',
-        lastName: clientData.lastName || '',
-        organizationName: clientData.organizationName || '',
-        contactInfo: clientData.contactInfo || {
+      // Make the actual API call to create the client
+      const newClient = await createClientService(clientData);
+      
+      // Map the API response to our Client type if needed
+      const mappedClient: Client = {
+        id: newClient.id,
+        type: newClient.clientType,
+        firstName: newClient.firstName,
+        lastName: newClient.lastName,
+        organizationName: newClient.company,
+        contactInfo: newClient.contacts || {
           email: '',
           phone: '',
           address: {
@@ -92,17 +151,18 @@ export const createClient = createAsyncThunk(
           },
         },
         cases: [],
-        intakeDate: now,
+        intakeDate: newClient.createdAt,
         kycVerified: false,
         kycDocuments: [],
-        conflictCheckStatus: 'pending',
+        conflictCheckStatus: newClient.conflictCheckStatus ? 'cleared' : 'flagged',
         notes: [],
-        createdAt: now,
-        updatedAt: now,
+        createdAt: newClient.createdAt,
+        updatedAt: newClient.updatedAt,
       };
       
-      return newClient;
+      return mappedClient;
     } catch (error) {
+      console.error('Error creating client:', error);
       return rejectWithValue('Failed to create client');
     }
   }
@@ -112,9 +172,13 @@ export const updateClient = createAsyncThunk(
   'clients/updateClient',
   async ({ clientId, clientData }: { clientId: string; clientData: Partial<Client> }, { rejectWithValue, getState }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Import the client service to make the API call
+      const { updateClient: updateClientService } = await import('../../services/clientService');
       
+      // Make the actual API call to update the client
+      const updatedClientResponse = await updateClientService(clientId, clientData);
+      
+      // Get the existing client from state to merge with the response
       const state = getState() as { clients: ClientsState };
       const existingClient = state.clients.clients.find(c => c.id === clientId);
       
@@ -122,15 +186,16 @@ export const updateClient = createAsyncThunk(
         return rejectWithValue('Client not found');
       }
       
-      const now = new Date().toISOString();
+      // Map the API response to our Client type
       const updatedClient: Client = {
         ...existingClient,
         ...clientData,
-        updatedAt: now,
+        updatedAt: updatedClientResponse.updatedAt || new Date().toISOString(),
       };
       
       return updatedClient;
     } catch (error) {
+      console.error(`Error updating client ${clientId}:`, error);
       return rejectWithValue('Failed to update client');
     }
   }
@@ -140,11 +205,15 @@ export const deleteClient = createAsyncThunk(
   'clients/deleteClient',
   async (clientId: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Import the client service to make the API call
+      const { deleteClient: deleteClientService } = await import('../../services/clientService');
+      
+      // Make the actual API call to delete the client
+      await deleteClientService(clientId);
       
       return clientId;
     } catch (error) {
+      console.error(`Error deleting client ${clientId}:`, error);
       return rejectWithValue('Failed to delete client');
     }
   }
@@ -154,8 +223,8 @@ export const addClientDocument = createAsyncThunk(
   'clients/addClientDocument',
   async ({ clientId, document }: { clientId: string; document: Document }, { rejectWithValue, getState }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Import the client service to make the API call
+      const { updateClient: updateClientService } = await import('../../services/clientService');
       
       const state = getState() as { clients: ClientsState };
       const existingClient = state.clients.clients.find(c => c.id === clientId);
@@ -164,8 +233,15 @@ export const addClientDocument = createAsyncThunk(
         return rejectWithValue('Client not found');
       }
       
+      // Add the document to the client's kycDocuments array
+      const updatedClient = await updateClientService(clientId, {
+        kycDocuments: [...(existingClient.kycDocuments || []), document]
+      });
+      
+      // Return the clientId and document for the reducer to use
       return { clientId, document };
     } catch (error) {
+      console.error(`Error adding document to client ${clientId}:`, error);
       return rejectWithValue('Failed to add document to client');
     }
   }
@@ -209,7 +285,9 @@ const clientsSlice = createSlice({
       })
       .addCase(fetchClients.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.clients = action.payload;
+        // Ensure we're setting the clients array with the payload
+        // If payload is empty or undefined, set to empty array
+        state.clients = action.payload || [];
       })
       .addCase(fetchClients.rejected, (state, action) => {
         state.isLoading = false;

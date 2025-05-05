@@ -31,11 +31,11 @@ export const login = createAsyncThunk(
       const response = await authService.login(email, password);
       
       // Ensure we have both user data and token
-      if (!response.user || !response.token) {
+      if (!response.data || !response.token) {
         return rejectWithValue('Invalid response from server');
       }
       
-      return { user: response.user, token: response.token };
+      return { user: response.data, token: response.token };
     } catch (error: any) {
       // Handle error message from authService
       return rejectWithValue(

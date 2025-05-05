@@ -5,6 +5,7 @@ interface DetailItemProps {
   label: string;
   value: ReactNode;
   className?: string;
+  children?: string;
 }
 
 interface DetailSectionProps {
@@ -21,11 +22,12 @@ interface DetailViewProps {
 }
 
 // Detail Item Component
-export const DetailItem: React.FC<DetailItemProps> = ({ label, value, className = '' }) => {
+export const DetailItem: React.FC<DetailItemProps> = ({ label, value, className = '', children }) => {
   return (
     <div className={`detail-item ${className}`}>
       <div className="detail-label">{label}</div>
       <div className="detail-value">{value}</div>
+      <div className="detail-grid">{children}</div>
     </div>
   );
 };

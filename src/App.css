@@ -727,3 +727,9 @@
   color: #7f8c8d;
   font-style: italic;
 }
+
+.documents-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
