@@ -92,7 +92,7 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
 // Update a client
 export const updateClient = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await Client.findOne({ _id: req.params.id, isDeleted: false });
+    const client = await Client.findById({ _id: req.params.id, isDeleted: false });
     
     if (!client) {
       return res.status(404).json({
@@ -106,7 +106,7 @@ export const updateClient = async (req: Request, res: Response, next: NextFuncti
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
-    ).populate('primaryAttorney', 'firstName lastName email');
+    )
     
     res.status(200).json({
       success: true,
