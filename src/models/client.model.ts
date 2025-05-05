@@ -21,6 +21,28 @@ const clientContactSchema = new Schema(
   { _id: true }
 );
 
+const addressSchema = new Schema(
+  {
+    street: {
+      type: String,
+      trim: true,
+    },
+    city: {
+      type: String,
+      trim: true,
+    },
+    country: {
+      type: String,
+      trim: true,
+    },
+    postalCode: {
+      type: String,
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 const clientSchema = new Schema<IClientDocument, IClientModel>(
   {
     firstName: {
@@ -35,8 +57,8 @@ const clientSchema = new Schema<IClientDocument, IClientModel>(
     },
     clientType: {
       type: String,
-      enum: ['personal', 'organization'],
-      default: 'personal',
+      enum: ['individual', 'organization'],
+      default: 'individual',
     },
     dateOfBirth: {
       type: Date,
@@ -50,6 +72,7 @@ const clientSchema = new Schema<IClientDocument, IClientModel>(
       trim: true,
     },
     contacts: [clientContactSchema],
+    address: addressSchema,
     primaryAttorney: {
       type: Schema.Types.ObjectId,
       ref: 'User',

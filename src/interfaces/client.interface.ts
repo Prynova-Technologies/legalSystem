@@ -9,6 +9,13 @@ export interface IClientContact {
   notes?: string;
 }
 
+export interface IAddress {
+  street: string;
+  city: string;
+  country: string;
+  postalCode: string;
+}
+
 export interface IClientDocument {
   name: string;
   contactInfo: string;
@@ -23,6 +30,7 @@ export interface IClient {
   maritalStatus?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated';
   company?: string;
   contacts: IClientContact[];
+  address?: IAddress;
   primaryAttorney?: string | IUserDocument;
   referralSource?: string;
   intakeDate: Date;

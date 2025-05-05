@@ -101,9 +101,10 @@ export const updateClient = async (req: Request, res: Response, next: NextFuncti
       });
     }
     
+    // For PATCH requests, we only update the fields that are provided
     const updatedClient = await Client.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { $set: req.body },
       { new: true, runValidators: true }
     ).populate('primaryAttorney', 'firstName lastName email');
     

@@ -60,7 +60,7 @@ router.route('/')
 
 router.route('/:id')
   .get(authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL, UserRole.ACCOUNTANT, UserRole.CLIENT]), getClientById)
-  .put(authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]), updateClient)
+  .patch(authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]), updateClient)
   .delete(authorize([UserRole.ADMIN, UserRole.LAWYER]), deleteClient);
 
 export default router;
