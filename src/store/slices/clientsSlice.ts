@@ -59,7 +59,7 @@ export const fetchClients = createAsyncThunk('clients/fetchClients', async (filt
       intakeDate: client.intakeDate || client.createdAt,
       kycVerified: client.kycVerified,
       kycDocuments: client.documents || [],
-      conflictCheckStatus: client.conflictCheckStatus ? 'cleared' : 'flagged',
+      conflictCheckStatus: client.conflictCheckCompleted ? 'cleared' : 'flagged',
       notes: client.notes || [],
       createdAt: client.createdAt,
       updatedAt: client.updatedAt,
@@ -108,7 +108,7 @@ export const fetchClientById = createAsyncThunk(
         intakeDate: client.intakeDate || client.createdAt || new Date().toISOString(),
         kycVerified: client.kycVerified || false,
         kycDocuments: client.kycDocuments || [],
-        conflictCheckStatus: client.conflictCheckStatus ? 'cleared' : 'flagged',
+        conflictCheckStatus: client.conflictCheckCompleted ? 'cleared' : 'flagged',
         notes: client.notes || [],
         createdAt: client.createdAt || new Date().toISOString(),
         updatedAt: client.updatedAt || new Date().toISOString(),
@@ -154,7 +154,7 @@ export const createClient = createAsyncThunk(
         intakeDate: newClient.createdAt,
         kycVerified: false,
         kycDocuments: [],
-        conflictCheckStatus: newClient.conflictCheckStatus ? 'cleared' : 'flagged',
+        conflictCheckStatus: newClient.conflictCheckCompleted ? 'cleared' : 'flagged',
         notes: [],
         createdAt: newClient.createdAt,
         updatedAt: newClient.updatedAt,
@@ -191,6 +191,7 @@ export const updateClient = createAsyncThunk(
         ...existingClient,
         ...clientData,
         updatedAt: updatedClientResponse.updatedAt || new Date().toISOString(),
+        conflictCheckStatus: updatedClientResponse.conflictCheckCompleted ? 'cleared' : 'flagged',
       };
       
       return updatedClient;

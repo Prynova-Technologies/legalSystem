@@ -172,7 +172,7 @@ const Clients: React.FC = () => {
               header: 'Conflict Check', 
               accessor: row => (
                 <StatusBadge 
-                  status={row.conflictCheckStatus === 'cleared' ? 'Completed' : row.conflictCheckStatus} 
+                  status={row.conflictCheckStatus} 
                 />
               )
             },

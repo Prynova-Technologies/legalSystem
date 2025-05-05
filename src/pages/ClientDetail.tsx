@@ -36,7 +36,7 @@ const ClientDetail: React.FC = () => {
       isPrimary?: boolean;
     }>,
     kycVerified: false,
-    conflictCheckStatus: 'flagged',
+    conflictCheckStatus: 'flagged' | 'cleared',
     note: ''
   });
 
@@ -93,8 +93,6 @@ const ClientDetail: React.FC = () => {
           postalCode: '' 
         });
       }
-
-      console.log(currentClient)
       
       setEditFormData({
         firstName: currentClient.firstName || '',
@@ -218,8 +216,8 @@ const ClientDetail: React.FC = () => {
           clientType: editFormData.clientType,
           contacts: editFormData.contacts.filter(c => c.value.trim() !== ''),
           kycVerified: editFormData.kycVerified,
-          conflictCheckStatus: editFormData.conflictCheckStatus === 'cleared' ? true : false,
-          note: editFormData.note
+          conflictCheckCompleted: editFormData.conflictCheckStatus === 'cleared' ? true : false,
+          notes: editFormData.note
         };
         
         await dispatch(updateClient({
@@ -279,7 +277,7 @@ const ClientDetail: React.FC = () => {
           <h3>{getClientName()}</h3>
         </div>
         <div style={{display: "flex", justifyContent: "space-between"}}>
-          <Button variant="secondary" onClick={() => navigate('/clients')}>
+          <Button variant="secondary" onClick={() => isEditing ? setIsEditing(false) : navigate('/clients')}>
             <FaIcons.FaArrowLeft />{" "}Back
           </Button>
           <div>
@@ -316,7 +314,7 @@ const ClientDetail: React.FC = () => {
               </select>
             </div>
 
-            {editFormData.clientType === 'personal' ? (
+            {editFormData.clientType === 'individual' ? (
               <>
                 <div className="form-row">
                   <div className="form-group">
@@ -353,7 +351,7 @@ const ClientDetail: React.FC = () => {
                   name="organizationName"
                   value={editFormData.organizationName}
                   onChange={handleEditChange}
-                  required
+                  required={editFormData.clientType === 'individual' ? false : true}
                 />
               </div>
             )}
