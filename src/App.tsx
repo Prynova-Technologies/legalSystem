@@ -27,6 +27,7 @@ import Settings from './pages/Settings';
 // Import styles
 import './App.css';
 import NewClient from './pages/NewClient';
+import NewCase from './pages/NewCase';
 
 const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -53,6 +54,10 @@ const App: React.FC = () => {
         <Route
           path="/cases"
           element={isAuthenticated ? <Layout><Cases /></Layout> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/cases/new-case"
+          element={isAuthenticated ? <Layout><NewCase /></Layout> : <Navigate to="/login" replace />}
         />
         <Route
           path="/cases/:id"

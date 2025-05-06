@@ -11,9 +11,6 @@ const NewCase: React.FC = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <h1>New Case</h1>
-      </div>
       <NewCaseForm onCancel={handleCancel} />
     </div>
   );

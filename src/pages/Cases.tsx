@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchCases, setFilters, clearFilters } from '../store/slices/casesSlice';
 import { CaseStatus, CaseType } from '../types';
+import { Button, DataTable, FilterSection, FilterConfig } from '../components/common';
 
 const Cases: React.FC = () => {
   const dispatch = useDispatch();
@@ -85,99 +86,105 @@ const Cases: React.FC = () => {
     <div className="cases-container">
       <div className="page-header">
         <h1>Cases</h1>
-        <Link to="/new-case" className="btn btn-primary">
+        <Button to="/cases/new-case" className="btn" variant='primary'>
           New Case
-        </Link>
+        </Button>
       </div>
 
-      <div className="filters-section">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            placeholder="Search cases..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="search-input"
-          />
-          <button type="submit" className="search-button">Search</button>
-        </form>
-
-        <div className="filter-controls">
-          <div className="filter-group">
-            <label>Status:</label>
-            <select
-              value={filters.status || ''}
-              onChange={(e) => handleFilterChange('status', e.target.value || null)}
-            >
-              <option value="">All Statuses</option>
-              {Object.values(CaseStatus).map(status => (
-                <option key={status} value={status}>{status.replace('_', ' ')}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Type:</label>
-            <select
-              value={filters.type || ''}
-              onChange={(e) => handleFilterChange('type', e.target.value || null)}
-            >
-              <option value="">All Types</option>
-              {Object.values(CaseType).map(type => (
-                <option key={type} value={type}>{type.replace('_', ' ')}</option>
-              ))}
-            </select>
-          </div>
-
-          <button onClick={handleClearFilters} className="clear-filters-button">
-            Clear Filters
-          </button>
-        </div>
-      </div>
+      <FilterSection
+        filters={[
+          {
+            type: 'select',
+            name: 'status',
+            label: 'Status',
+            options: [
+              { label: 'All Statuses', value: '' },
+              ...Object.values(CaseStatus).map(status => ({
+                label: status.replace('_', ' '),
+                value: status
+              }))
+            ],
+            valueTransform: (value) => value || null
+          },
+          {
+            type: 'select',
+            name: 'type',
+            label: 'Type',
+            options: [
+              { label: 'All Types', value: '' },
+              ...Object.values(CaseType).map(type => ({
+                label: type.replace('_', ' '),
+                value: type
+              }))
+            ],
+            valueTransform: (value) => value || null
+          }
+        ]}
+        initialValues={{
+          status: filters.status || '',
+          type: filters.type || ''
+        }}
+        onFilterChange={handleFilterChange}
+        onSearch={handleSearch}
+        onClearFilters={handleClearFilters}
+        searchInputValue={searchInput}
+        onSearchInputChange={setSearchInput}
+      />
 
       {isLoading ? (
         <div className="loading-indicator">Loading cases...</div>
       ) : error ? (
         <div className="error-message">{error}</div>
-      ) : filteredCases.length === 0 ? (
-        <div className="empty-state">
-          <p>No cases found. Try adjusting your filters or create a new case.</p>
-        </div>
       ) : (
-        <div className="cases-table-container">
-          <table className="cases-table">
-            <thead>
-              <tr>
-                <th>Case Number</th>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Open Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCases.map(caseItem => (
-                <tr key={caseItem.id}>
-                  <td>{caseItem.caseNumber}</td>
-                  <td>{caseItem.title}</td>
-                  <td>{caseItem.caseType.replace('_', ' ')}</td>
-                  <td>
-                    <span className={getStatusBadgeClass(caseItem.status)}>
-                      {caseItem.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td>{formatDate(caseItem.openDate)}</td>
-                  <td>
-                    <Link to={`/cases/${caseItem.id}`} className="view-link">
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        // <div className="cases-table-container">
+          <DataTable
+            columns={[
+              {
+                header: 'Case Number',
+                accessor: 'caseNumber',
+                sortable: true
+              },
+              {
+                header: 'Title',
+                accessor: 'title',
+                sortable: true
+              },
+              {
+                header: 'Type',
+                accessor: (row) => row.caseType.replace('_', ' '),
+                sortable: true
+              },
+              {
+                header: 'Status',
+                accessor: (row) => (
+                  <span className={getStatusBadgeClass(row.status)}>
+                    {row.status.replace('_', ' ')}
+                  </span>
+                )
+              },
+              {
+                header: 'Open Date',
+                accessor: (row) => formatDate(row.openDate),
+                sortable: true
+              },
+              {
+                header: 'Actions',
+                accessor: (row) => (
+                  <Link to={`/cases/${row.id}`} className="view-link">
+                    View
+                  </Link>
+                )
+              }
+            ]}
+            data={filteredCases}
+            onRowClick={(row) => window.location.href = `/cases/${row.id}`}
+            emptyMessage="No cases found. Try adjusting your filters or create a new case."
+            striped={true}
+            // bordered={true}
+            pagination={true}
+            pageSize={10}
+          />
+        // </div>
       )}
     </div>
   );

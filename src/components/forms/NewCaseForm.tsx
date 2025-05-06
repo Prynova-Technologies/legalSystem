@@ -21,8 +21,8 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
   
   // Get attorneys for dropdown
   const users = useSelector((state: RootState) => state.auth.users);
-  const attorneys = users.filter(user => user.role === 'lawyer');
-  const paralegals = users.filter(user => user.role === 'paralegal');
+  const attorneys = users?.filter(user => user.role === 'lawyer');
+  const paralegals = users?.filter(user => user.role === 'paralegal');
 
   const handleSubmit = async (formData: Record<string, any>) => {
     try {
@@ -109,31 +109,31 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
           required: true
         },
         {
+            id: 'caseType',
+            label: 'Case Type',
+            type: 'select',
+            options: caseTypeOptions,
+            required: true
+          },
+          {
+            id: 'client',
+            label: 'Client',
+            type: 'select',
+            options: clients.map(client => ({
+              value: client.id,
+              label: client.type === 'individual' 
+                ? `${client.firstName} ${client.lastName}` 
+                : client.organizationName
+            })),
+            required: true
+          },
+        {
           id: 'description',
           label: 'Description',
           type: 'textarea',
           placeholder: 'Enter case description',
           required: true
         },
-        {
-          id: 'caseType',
-          label: 'Case Type',
-          type: 'select',
-          options: caseTypeOptions,
-          required: true
-        },
-        {
-          id: 'client',
-          label: 'Client',
-          type: 'select',
-          options: clients.map(client => ({
-            value: client.id,
-            label: client.type === 'individual' 
-              ? `${client.firstName} ${client.lastName}` 
-              : client.organizationName
-          })),
-          required: true
-        }
       ]
     };
 
@@ -144,7 +144,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
           id: 'primaryAttorney',
           label: 'Primary Attorney',
           type: 'select',
-          options: attorneys.map(attorney => ({
+          options: attorneys?.map(attorney => ({
             value: attorney.id,
             label: `${attorney.firstName} ${attorney.lastName}`
           })),
