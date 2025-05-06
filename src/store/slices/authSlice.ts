@@ -29,6 +29,8 @@ export const login = createAsyncThunk(
       }
       
       const response = await authService.login(email, password);
+
+      // console.log(response.data)
       
       // Ensure we have both user data and token
       if (!response.data || !response.token) {

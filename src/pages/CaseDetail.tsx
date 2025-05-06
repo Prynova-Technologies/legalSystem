@@ -94,7 +94,7 @@ const CaseDetail: React.FC = () => {
       };
 
       try {
-        await dispatch(addCaseNote({ caseId: id, note: newNote }) as any);
+        // await dispatch(addCaseNote({ caseId: id, note: newNote }) as any);
         setNoteContent('');
       } catch (error) {
         console.error('Failed to add note:', error);

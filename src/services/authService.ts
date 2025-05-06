@@ -53,13 +53,15 @@ const authService = {
     try {
       // Make API call to backend authentication endpoint
       const response = await api.post('/auth/login', { email, password });
+
+      // console.log({'service': response})
       // Validate response - ensure we have a token
-      if (!response.data || !response.token) {
+      if (!response.data.data || !response.data.token) {
         throw new Error('Invalid response from server. Authentication failed.');
       }
       
       // Store token in localStorage
-      localStorage.setItem('token', response.token);
+      localStorage.setItem('token', response.data.token);
       
       return response.data;
     } catch (error: any) {
@@ -82,7 +84,7 @@ const authService = {
   // Logout user
   logout: async () => {
     try {
-      await api.post('/auth/logout');
+      // await api.post('/auth/logout');
       localStorage.removeItem('token');
     } catch (error) {
       console.error('Logout error:', error);

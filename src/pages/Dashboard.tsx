@@ -39,7 +39,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1>Welcome, {user?.data.firstName}!</h1>
+        <h1>Welcome, {user?.firstName}!</h1>
         <p>Here's an overview of your legal practice</p>
       </div>
 

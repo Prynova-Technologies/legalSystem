@@ -3,9 +3,17 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import * as FaIcons from 'react-icons/fa';
 import './Layout.css';
+import { logout } from '../../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const TopBar: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const _handleLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
 
   return (
     <div className="top-bar">
@@ -20,6 +28,9 @@ const TopBar: React.FC = () => {
         <div className="notification-icon">
           <FaIcons.FaBell />
           <span className="notification-badge">3</span>
+        </div>
+        <div className="btn btn-primary" onClick={() => _handleLogout()}>
+          logout
         </div>
         <div className="user-info">
           <FaIcons.FaUserCircle className="user-avatar" />
