@@ -265,7 +265,7 @@ const ClientDetail: React.FC = () => {
   const clientDocuments = documents.data?.filter(doc => doc.client?._id === id);
 
   const getClientName = () => {
-    return currentClient.clientType === 'individual' ?
+    return currentClient.type === 'individual' ?
       currentClient.firstName + " " + currentClient.lastName :
       currentClient.organizationName;
   };
@@ -652,12 +652,12 @@ const ClientDetail: React.FC = () => {
                           onPreview={() => window.open(doc.versions[0].filePath, '_blank')}
                           // onEdit={() => navigate(`/documents/${doc._id}`)}
                           onDownload={() => window.open(doc.versions[0].filePath, '_blank')}
-                          onDelete={() => {
-                            if (window.confirm('Are you sure you want to delete this document?')) {
-                              // Handle document deletion logic here
-                              console.log('Delete document:', doc._id);
-                            }
-                          }}
+                          // onDelete={() => {
+                          //   if (window.confirm('Are you sure you want to delete this document?')) {
+                          //     // Handle document deletion logic here
+                          //     console.log('Delete document:', doc._id);
+                          //   }
+                          // }}
                         />
                       ))}
                     </div>
@@ -670,32 +670,11 @@ const ClientDetail: React.FC = () => {
 
             {activeTab === 'notes' && (
               <div className="notes-tab">
-                <DetailView title="Client Notes" actions={
-                  <Button variant="primary" size="small">
-                    <FaIcons.FaPlus /> Add Note
-                  </Button>
-                }>
-                  <div className="add-note-section">
-                    <h3>Add Note</h3>
-                    <form className="add-note-form">
-                      <div className="form-group">
-                        <textarea
-                          className="form-textarea"
-                          placeholder="Enter your note here..."
-                          rows={4}
-                          required
-                        />
-                      </div>
-                      <Button type="submit" variant="primary">
-                        <FaIcons.FaSave /> Save Note
-                      </Button>
-                    </form>
-                  </div>
-                  
+                <DetailView title="Client Note">
                   <DetailSection title="Clien Note">
-                          <div className="note-item">
-                            <div className="note-content">{currentClient.note}</div>
-                          </div>
+                    <div className="note-item">
+                      <div className="note-content">{currentClient.notes}</div>
+                    </div>
                   </DetailSection>
                 </DetailView>
               </div>

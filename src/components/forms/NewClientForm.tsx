@@ -119,7 +119,6 @@ const NewClientForm: React.FC<NewClientFormProps> = ({ onCancel }) => {
       const resultAction = await dispatch(createClient(clientData));
       
       if (createClient.fulfilled.match(resultAction)) {
-        console.log(resultAction)
         toast.success('Client created successfully');
         navigate(`/clients/${resultAction.payload.id}`);
       } else {
