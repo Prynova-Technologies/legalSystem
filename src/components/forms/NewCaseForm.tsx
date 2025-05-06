@@ -20,7 +20,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
   const clients = useSelector((state: RootState) => state.clients.clients);
   
   // Get attorneys for dropdown
-  const users = useSelector((state: RootState) => state.auth.users);
+  const users = useSelector((state: RootState) => state.users.users);
   const attorneys = users?.filter(user => user.role === 'lawyer');
   const paralegals = users?.filter(user => user.role === 'paralegal');
 

@@ -10,6 +10,7 @@ import reportingReducer from './slices/reportingSlice';
 import communicationsReducer from './slices/communicationsSlice';
 import securityReducer from './slices/securitySlice';
 import integrationReducer from './slices/integrationSlice';
+import usersReducer from './slices/userSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     communications: communicationsReducer,
     security: securityReducer,
     integration: integrationReducer,
+    users: usersReducer,
   },
 });
 

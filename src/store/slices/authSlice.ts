@@ -32,7 +32,7 @@ export const login = createAsyncThunk(
 
       // console.log(response.data)
       
-      // Ensure we have both user data and token
+      // Ensure we have user authentication data
       if (!response.data || !response.token) {
         return rejectWithValue('Invalid response from server');
       }

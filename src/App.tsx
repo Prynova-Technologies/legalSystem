@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './store';
 import { getCurrentUser } from './store/slices/authSlice';
+import { fetchUsers } from './store/slices/userSlice';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -37,6 +38,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (token) {
       dispatch(getCurrentUser() as any);
+      // Fetch users when app loads
+      dispatch(fetchUsers() as any);
     }
   }, [dispatch, token]);
 
