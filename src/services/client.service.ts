@@ -12,7 +12,16 @@ export class ClientService {
    */
   static async getAllClients(filters: any = {}): Promise<any[]> {
     try {
-      const filter: any = { isDeleted: false, ...filters };
+      // Create a new filter object with isDeleted: false as a base
+      // We need to be careful not to override this with any filters passed in
+      const filter: any = { isDeleted: false };
+      
+      // Copy other filters without overriding isDeleted
+      Object.keys(filters).forEach(key => {
+        if (key !== 'isDeleted') {
+          filter[key] = filters[key];
+        }
+      });
       
       // Handle date range filters if they exist in the filters object
       if (filter.intakeAfter) {
@@ -43,9 +52,10 @@ export class ClientService {
         delete filter.search;
       }
       
-      return await Client.find(filter)
-        .populate('primaryAttorney', 'firstName lastName email')
+      const clients = await Client.find(filter)
         .sort({ lastName: 1, firstName: 1 });
+      
+      return clients;
     } catch (error) {
       logger.error('Error fetching clients', { error, filters });
       throw error;

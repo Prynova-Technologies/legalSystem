@@ -98,6 +98,10 @@ const clientSchema = new Schema<IClientDocument, IClientModel>(
       default: false,
     },
     conflictCheckNotes: String,
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

@@ -2,43 +2,30 @@ import { Request, Response, NextFunction } from 'express';
 import Client from '../models/client.model';
 import Case from '../models/case.model';
 import Invoice from '../models/invoice.model';
+import { ClientService } from '../services/client.service';
 
 // Get all clients with filtering options
 export const getAllClients = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filter: any = { isDeleted: false };
+    // Create a filters object from query parameters
+    const filters: any = {};
     
     // Apply filters if provided
-    if (req.query.isActive) filter.isActive = req.query.isActive === 'true';
-    if (req.query.attorney) filter.primaryAttorney = req.query.attorney;
-    if (req.query.kycVerified) filter.kycVerified = req.query.kycVerified === 'true';
+    if (req.query.isActive) filters.isActive = req.query.isActive === 'true';
+    if (req.query.kycVerified) filters.kycVerified = req.query.kycVerified === 'true';
     
     // Date range filters
-    if (req.query.intakeAfter) filter.intakeDate = { $gte: new Date(req.query.intakeAfter as string) };
-    if (req.query.intakeBefore) {
-      filter.intakeDate = filter.intakeDate || {};
-      filter.intakeDate.$lte = new Date(req.query.intakeBefore as string);
-    }
-    
-    // Tag filtering
-    if (req.query.tags) {
-      const tags = (req.query.tags as string).split(',');
-      filter.tags = { $in: tags };
-    }
+    if (req.query.intakeAfter) filters.intakeAfter = req.query.intakeAfter as string;
+    if (req.query.intakeBefore) filters.intakeBefore = req.query.intakeBefore as string;
     
     // Search by name or company
-    if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search as string, 'i');
-      filter.$or = [
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { company: searchRegex }
-      ];
-    }
+    if (req.query.search) filters.search = req.query.search as string;
     
-    const clients = await Client.find()
-      // .populate('primaryAttorney', 'firstName lastName email')
-      // .sort({ lastName: 1, firstName: 1 });
+    // Tags filter
+    if (req.query.tags) filters.tags = req.query.tags as string;
+    
+    // Use the ClientService to get filtered clients
+    const clients = await ClientService.getAllClients(filters);
     
     res.status(200).json({
       success: true,
