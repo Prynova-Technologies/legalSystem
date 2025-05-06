@@ -98,8 +98,21 @@
 .case-form-container .form-input,
 .case-form-container .form-select,
 .case-form-container .form-textarea {
-  padding: 0.625rem 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+/* Style for multi-select fields */
+.client-form-container .form-select[multiple],
+.case-form-container .form-select[multiple] {
+  min-height: 120px;
+  padding: 0.5rem;
+  border: 1px solid #cbd5e0;
+  background-color: #f8fafc;
   border-radius: 0.375rem;
   transition: all 0.2s ease;
 }

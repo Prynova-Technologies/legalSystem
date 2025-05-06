@@ -34,16 +34,14 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
         assignedAttorneys.push(formData.primaryAttorney);
       }
       
-      if (formData.additionalAttorneys) {
-        const additionalAttorneysArray = formData.additionalAttorneys.split(',');
-        assignedAttorneys.push(...additionalAttorneysArray.map((id: string) => id.trim()));
+      if (formData.additionalAttorneys && Array.isArray(formData.additionalAttorneys)) {
+        assignedAttorneys.push(...formData.additionalAttorneys);
       }
       
       // Format assigned paralegals array
       const assignedParalegals = [];
-      if (formData.assignedParalegals) {
-        const assignedParalegalsArray = formData.assignedParalegals.split(',');
-        assignedParalegals.push(...assignedParalegalsArray.map((id: string) => id.trim()));
+      if (formData.assignedParalegals && Array.isArray(formData.assignedParalegals)) {
+        assignedParalegals.push(...formData.assignedParalegals);
       }
       
       // Format court details
@@ -152,15 +150,23 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
         },
         {
           id: 'additionalAttorneys',
-          label: 'Additional Attorneys (comma-separated IDs)',
-          type: 'text',
-          placeholder: 'Enter attorney IDs separated by commas'
+          label: 'Additional Attorneys',
+          type: 'select',
+          multiple: true,
+          options: attorneys?.map(attorney => ({
+            value: attorney.id,
+            label: `${attorney.firstName} ${attorney.lastName}`
+          }))
         },
         {
           id: 'assignedParalegals',
-          label: 'Assigned Paralegals (comma-separated IDs)',
-          type: 'text',
-          placeholder: 'Enter paralegal IDs separated by commas'
+          label: 'Assigned Paralegals',
+          type: 'select',
+          multiple: true,
+          options: paralegals?.map(paralegal => ({
+            value: paralegal.id,
+            label: `${paralegal.firstName} ${paralegal.lastName}`
+          }))
         }
       ]
     };

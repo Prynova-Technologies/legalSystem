@@ -5,11 +5,12 @@ import './CommonStyles.css';
 export type FormField = {
   id: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'date' | 'checkbox' | 'number';
+  type: 'text' | 'textarea' | 'select' | 'date' | 'checkbox' | 'number' | 'multiselect';
   placeholder?: string;
   required?: boolean;
   options?: { value: string; label: string }[];
   validation?: (value: any) => string | null;
+  multiple?: boolean;
 };
 
 export type FormSection = {
@@ -76,6 +77,11 @@ const DataForm: React.FC<DataFormProps> = ({
       onChange[fieldId](value);
     }
   };
+  
+  const handleMultiSelectChange = (fieldId: string, e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
+    handleChange(fieldId, selectedOptions);
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -137,18 +143,21 @@ const DataForm: React.FC<DataFormProps> = ({
             <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
             <select
               id={id}
-              value={value}
-              onChange={(e) => handleChange(id, e.target.value)}
+              value={field.multiple ? (Array.isArray(value) ? value : []) : value}
+              onChange={(e) => field.multiple ? handleMultiSelectChange(id, e) : handleChange(id, e.target.value)}
               className={`form-select ${error ? 'form-input-error' : ''}`}
               required={required}
+              multiple={field.multiple}
+              size={field.multiple ? Math.min(options?.length || 5, 5) : undefined}
             >
-              <option value="">Select {label}</option>
+              {!field.multiple && <option value="">Select {label}</option>}
               {options?.map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
+            {field.multiple && <div className="form-help-text">Hold Ctrl/Cmd to select multiple options</div>}
             {error && <div className="form-error">{error}</div>}
           </div>
         );

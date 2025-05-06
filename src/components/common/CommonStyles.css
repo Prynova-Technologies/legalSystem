@@ -490,6 +490,13 @@
   margin-top: 0.25rem;
 }
 
+.form-help-text {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
 .required-mark {
   color: #e53e3e;
   margin-left: 0.25rem;
