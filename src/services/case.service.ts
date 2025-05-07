@@ -52,7 +52,7 @@ export class CaseService {
       // Fetch the case with populated references
       const caseItem = await Case.findOne({ _id: caseId, isDeleted: false })
         .populate('client', 'firstName lastName company')
-        .populate('assignedAttorneys', 'firstName lastName email')
+        .populate('assignedAttorneys.attorney', 'firstName lastName email assignedAttorneys.isPrimary')
         .populate('assignedParalegals', 'firstName lastName email')
         .populate('parties');
       
@@ -143,8 +143,8 @@ export class CaseService {
         { new: true, runValidators: true }
       )
         .populate('client', 'firstName lastName company')
-        .populate('attorneys', 'firstName lastName')
-        .populate('paralegal', 'firstName lastName');
+        .populate('assignedAttorneys.attorney', 'firstName lastName email')
+        .populate('assignedParalegals', 'firstName lastName email');
       
       logger.info('Case updated', { caseId });
       return updatedCase;
@@ -322,8 +322,8 @@ export class CaseService {
         client: clientId,
         isDeleted: false
       })
-        .populate('attorneys', 'firstName lastName')
-        .populate('paralegal', 'firstName lastName')
+        .populate('assignedAttorneys.attorney', 'firstName lastName email')
+        .populate('assignedParalegals', 'firstName lastName email')
         .sort({ openDate: -1 });
     } catch (error) {
       logger.error('Error fetching cases by client', { error, clientId });
@@ -337,11 +337,12 @@ export class CaseService {
   static async getCasesByAttorney(attorneyId: string): Promise<any[]> {
     try {
       return await Case.find({
-        attorneys: attorneyId,
+        'assignedAttorneys.attorney': attorneyId,
         isDeleted: false
       })
         .populate('client', 'firstName lastName company')
-        .populate('paralegal', 'firstName lastName')
+        .populate('assignedAttorneys.attorney', 'firstName lastName email')
+        .populate('assignedParalegals', 'firstName lastName email')
         .sort({ openDate: -1 });
     } catch (error) {
       logger.error('Error fetching cases by attorney', { error, attorneyId });
