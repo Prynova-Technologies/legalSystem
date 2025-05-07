@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Case, CaseStatus, CaseType } from '../../types';
-import { v4 as uuidv4 } from 'uuid';
+import caseService from '../../services/caseService';
+import { RootState } from '..';
 
 interface CasesState {
   cases: Case[];
@@ -30,163 +31,60 @@ const initialState: CasesState = {
   },
 };
 
-// Mock API calls - would be replaced with actual API calls
-export const fetchCases = createAsyncThunk('cases/fetchCases', async (_, { rejectWithValue }) => {
-  try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock data
-    const mockCases: Case[] = [
-      {
-        id: '1',
-        caseNumber: 'CASE-2023-001',
-        title: 'Smith vs. Johnson',
-        description: 'Personal injury case involving a car accident',
-        caseType: CaseType.CIVIL,
-        status: CaseStatus.OPEN,
-        clientId: '1',
-        assignedTo: ['2', '3'],
-        openDate: new Date().toISOString(),
-        courtDetails: {
-          courtName: 'Superior Court of California',
-          jurisdiction: 'Los Angeles County',
-          judge: 'Hon. Robert Williams',
-          courtroom: '12B',
-          filingNumber: 'LA-CIV-2023-12345',
-        },
-        relatedParties: [
-          {
-            id: '1',
-            name: 'John Smith',
-            type: 'plaintiff',
-            contactInfo: {
-              email: 'john.smith@example.com',
-              phone: '555-123-4567',
-              address: {
-                street: '123 Main St',
-                city: 'Los Angeles',
-                state: 'CA',
-                zipCode: '90001',
-                country: 'USA',
-              },
-            },
-          },
-          {
-            id: '2',
-            name: 'Robert Johnson',
-            type: 'defendant',
-            contactInfo: {
-              email: 'robert.johnson@example.com',
-              phone: '555-987-6543',
-              address: {
-                street: '456 Oak Ave',
-                city: 'Los Angeles',
-                state: 'CA',
-                zipCode: '90002',
-                country: 'USA',
-              },
-            },
-          },
-        ],
-        notes: [],
-        documents: [],
-        tasks: [],
-        billingInfo: {
-          id: '1',
-          caseId: '1',
-          billingType: 'hourly',
-          hourlyRate: 250,
-          timeEntries: [],
-          expenses: [],
-          invoices: [],
-        },
-        history: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-    
-    return mockCases;
-  } catch (error) {
-    return rejectWithValue('Failed to fetch cases');
+// Async thunks for API calls
+export const fetchCases = createAsyncThunk(
+  'cases/fetchCases', 
+  async (filters: Record<string, any> = {}, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      if (!token) {
+        return rejectWithValue('Authentication token not found');
+      }
+      
+      const cases = await caseService.getAllCases(token, filters);
+      return cases;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch cases');
+    }
   }
-});
+);
 
 export const fetchCaseById = createAsyncThunk(
   'cases/fetchCaseById',
   async (caseId: string, { rejectWithValue, getState }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const state = getState() as RootState;
+      const token = state.auth.token;
       
-      // In a real app, we would make an API call here
-      // For now, we'll just find the case in our state
-      const state = getState() as { cases: CasesState };
-      const foundCase = state.cases.cases.find(c => c.id === caseId);
-      
-      if (!foundCase) {
-        return rejectWithValue('Case not found');
+      if (!token) {
+        return rejectWithValue('Authentication token not found');
       }
       
-      return foundCase;
+      const caseData = await caseService.getCaseById(token, caseId);
+      return caseData;
     } catch (error) {
-      return rejectWithValue('Failed to fetch case details');
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch case details');
     }
   }
 );
 
 export const createCase = createAsyncThunk(
   'cases/createCase',
-  async (caseData: Partial<Case>, { rejectWithValue }) => {
+  async (caseData: Partial<Case>, { rejectWithValue, getState }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const state = getState() as RootState;
+      const token = state.auth.token;
       
-      const now = new Date().toISOString();
-      const newCase: Case = {
-        id: uuidv4(),
-        caseNumber: `CASE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        title: caseData.title || 'New Case',
-        description: caseData.description || '',
-        caseType: caseData.caseType || CaseType.OTHER,
-        status: CaseStatus.OPEN,
-        clientId: caseData.clientId || '',
-        assignedTo: caseData.assignedTo || [],
-        openDate: now,
-        courtDetails: caseData.courtDetails || undefined,
-        relatedParties: caseData.relatedParties || [],
-        notes: [],
-        documents: [],
-        tasks: [],
-        billingInfo: {
-          id: uuidv4(),
-          caseId: '',  // Will be updated after case creation
-          billingType: 'hourly',
-          hourlyRate: 250,
-          timeEntries: [],
-          expenses: [],
-          invoices: [],
-        },
-        history: [
-          {
-            id: uuidv4(),
-            timestamp: now,
-            userId: '1', // Current user ID would be used here
-            action: 'Case Created',
-            details: 'Case was created',
-          },
-        ],
-        createdAt: now,
-        updatedAt: now,
-      };
+      if (!token) {
+        return rejectWithValue('Authentication token not found');
+      }
       
-      // Update the caseId in billingInfo
-      newCase.billingInfo.caseId = newCase.id;
-      
+      const newCase = await caseService.createCase(token, caseData);
       return newCase;
     } catch (error) {
-      return rejectWithValue('Failed to create case');
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to create case');
     }
   }
 );
@@ -195,10 +93,16 @@ export const updateCase = createAsyncThunk(
   'cases/updateCase',
   async ({ caseId, caseData }: { caseId: string; caseData: Partial<Case> }, { rejectWithValue, getState }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const state = getState() as RootState;
+      const token = state.auth.token;
       
-      const state = getState() as { cases: CasesState };
+      if (!token) {
+        return rejectWithValue('Authentication token not found');
+      }
+      
+      let updatedCase = await caseService.updateCase(token, caseId, caseData);
+      
+      // const state = getState() as { cases: CasesState };
       const existingCase = state.cases.cases.find(c => c.id === caseId);
       
       if (!existingCase) {
@@ -206,20 +110,10 @@ export const updateCase = createAsyncThunk(
       }
       
       const now = new Date().toISOString();
-      const updatedCase: Case = {
+       updatedCase = {
         ...existingCase,
         ...caseData,
         updatedAt: now,
-        history: [
-          ...existingCase.history,
-          {
-            id: uuidv4(),
-            timestamp: now,
-            userId: '1', // Current user ID would be used here
-            action: 'Case Updated',
-            details: 'Case details were updated',
-          },
-        ],
       };
       
       return updatedCase;

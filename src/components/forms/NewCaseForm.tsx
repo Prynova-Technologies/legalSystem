@@ -6,6 +6,7 @@ import DataForm, { FormSection } from '../common/Form';
 import { toast } from 'react-toastify';
 import { CaseStatus, CaseType } from '../../types';
 import './FormStyles.css';
+import { createCase } from '../../store/slices/casesSlice';
 
 interface NewCaseFormProps {
   onCancel: () => void;
@@ -28,14 +29,22 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
     try {
       setIsLoading(true);
       
-      // Format assigned attorneys array
+      // Format assigned attorneys array with primary attorney flag
       const assignedAttorneys = [];
       if (formData.primaryAttorney) {
-        assignedAttorneys.push(formData.primaryAttorney);
+        assignedAttorneys.push({
+          attorney: formData.primaryAttorney,
+          isPrimary: true
+        });
       }
       
       if (formData.additionalAttorneys && Array.isArray(formData.additionalAttorneys)) {
-        assignedAttorneys.push(...formData.additionalAttorneys);
+        // Add additional attorneys with isPrimary set to false
+        const additionalAttorneysWithFlag = formData.additionalAttorneys.map(attorney => ({
+          attorney,
+          isPrimary: false
+        }));
+        assignedAttorneys.push(...additionalAttorneysWithFlag);
       }
       
       // Format assigned paralegals array
@@ -59,7 +68,8 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
         type: formData.caseType,
         status: CaseStatus.OPEN,
         client: formData.client,
-        assignedAttorneys,
+        clientRole: formData.clientRole,
+        assignedAttorneys: assignedAttorneys,
         assignedParalegals: assignedParalegals.length > 0 ? assignedParalegals : undefined,
         courtDetails: Object.keys(courtDetails).length > 0 ? courtDetails : undefined,
         notes: formData.notes || undefined,
@@ -67,20 +77,14 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
       };
       
       // Use Redux thunk to create case
-      // Note: This is a placeholder. You'll need to implement the actual createCase action in casesSlice
-      // const resultAction = await dispatch(createCase(caseData));
+      const resultAction = await dispatch(createCase(caseData));
       
-      // if (createCase.fulfilled.match(resultAction)) {
-      //   toast.success('Case created successfully');
-      //   navigate(`/cases/${resultAction.payload.id}`);
-      // } else {
-      //   throw new Error(resultAction.error.message || 'Failed to create case');
-      // }
-      
-      // Temporary placeholder until Redux action is implemented
-      console.log('Case data to be submitted:', caseData);
-      toast.success('Case created successfully');
-      navigate('/cases');
+      if (createCase.fulfilled.match(resultAction)) {
+        toast.success('Case created successfully');
+        navigate(`/cases/${resultAction.payload.id}`);
+      } else if (resultAction.error) {
+        throw new Error(resultAction.error.message || 'Failed to create case');
+      }
     } catch (error) {
       console.error('Error creating case:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create case');
@@ -125,6 +129,16 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({ onCancel }) => {
             })),
             required: true
           },
+        {
+          id: 'clientRole',
+          label: 'Client Role',
+          type: 'select',
+          options: [
+            { value: 'plaintiff', label: 'Plaintiff' },
+            { value: 'defendant', label: 'Defendant' }
+          ],
+          required: true
+        },
         {
           id: 'description',
           label: 'Description',

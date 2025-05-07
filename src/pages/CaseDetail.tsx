@@ -16,6 +16,8 @@ const CaseDetail: React.FC = () => {
   const { currentCase, isLoading, error } = useSelector((state: RootState) => state.cases);
   const { tasks } = useSelector((state: RootState) => state.tasks);
   const { documents } = useSelector((state: RootState) => state.documents);
+
+  console.log(currentCase)
   
   const [activeTab, setActiveTab] = useState('overview');
   const [noteContent, setNoteContent] = useState('');
@@ -120,8 +122,8 @@ const CaseDetail: React.FC = () => {
   }
 
   // Filter case-related tasks and documents
-  const caseTasks = tasks.filter(task => task.caseId === id);
-  const caseDocuments = documents.filter(doc => doc.caseId === id);
+  const caseTasks = currentCase.tasks;
+  const caseDocuments = currentCase.documents;
 
   return (
     <div className="case-detail-container">
@@ -239,13 +241,13 @@ const CaseDetail: React.FC = () => {
               className={`tab-button ${activeTab === 'documents' ? 'active' : ''}`}
               onClick={() => handleTabChange('documents')}
             >
-              Documents ({caseDocuments.length})
+              Documents ({caseDocuments?.length})
             </button>
             <button
               className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`}
               onClick={() => handleTabChange('notes')}
             >
-              Notes ({currentCase.notes.length})
+              Notes ({currentCase.notes?.length})
             </button>
             <button
               className={`tab-button ${activeTab === 'billing' ? 'active' : ''}`}
@@ -263,7 +265,7 @@ const CaseDetail: React.FC = () => {
                     <h3>Case Information</h3>
                     <div className="detail-item">
                       <span className="detail-label">Case Type:</span>
-                      <span className="detail-value">{currentCase.caseType.replace('_', ' ')}</span>
+                      <span className="detail-value">{currentCase.type.replace('_', ' ')}</span>
                     </div>
                     <div className="detail-item">
                       <span className="detail-label">Open Date:</span>
@@ -313,9 +315,9 @@ const CaseDetail: React.FC = () => {
 
                   <div className="detail-card">
                     <h3>Related Parties</h3>
-                    {currentCase.relatedParties.length > 0 ? (
+                    {currentCase.parties.length > 0 ? (
                       <div className="related-parties-list">
-                        {currentCase.relatedParties.map(party => (
+                        {currentCase.parties.map(party => (
                           <div key={party.id} className="related-party-item">
                             <div className="party-header">
                               <span className="party-name">{party.name}</span>

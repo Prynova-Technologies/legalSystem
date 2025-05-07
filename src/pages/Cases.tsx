@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchCases, setFilters, clearFilters } from '../store/slices/casesSlice';
 import { CaseStatus, CaseType } from '../types';
@@ -8,6 +8,7 @@ import { Button, DataTable, FilterSection, FilterConfig } from '../components/co
 
 const Cases: React.FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { cases, isLoading, error, filters } = useSelector((state: RootState) => state.cases);
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
 
@@ -151,7 +152,7 @@ const Cases: React.FC = () => {
               },
               {
                 header: 'Type',
-                accessor: (row) => row.caseType.replace('_', ' '),
+                accessor: (row) => row.type.replace('_', ' '),
                 sortable: true
               },
               {
@@ -167,17 +168,9 @@ const Cases: React.FC = () => {
                 accessor: (row) => formatDate(row.openDate),
                 sortable: true
               },
-              {
-                header: 'Actions',
-                accessor: (row) => (
-                  <Link to={`/cases/${row.id}`} className="view-link">
-                    View
-                  </Link>
-                )
-              }
             ]}
             data={filteredCases}
-            onRowClick={(row) => window.location.href = `/cases/${row.id}`}
+            onRowClick={(row) => navigate(`/cases/${row.id}`)}
             emptyMessage="No cases found. Try adjusting your filters or create a new case."
             striped={true}
             // bordered={true}
