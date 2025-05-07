@@ -1,40 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
-import Case from '../models/case.model';
-import Task from '../models/task.model';
-import TimeEntry from '../models/timeEntry.model';
-import Document from '../models/document.model';
-import { CaseStatus, ICaseParty, ICaseActivity } from '../interfaces/case.interface';
+import Note from '../models/note.model';
+import Activity from '../models/activity.model';
 import { CaseService } from '../services/case.service';
 
 // Get all cases with filtering options
 export const getAllCases = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filter: any = { isDeleted: false };
+    const filters: any = {};
     
     // Apply filters if provided
-    if (req.query.client) filter.client = req.query.client;
-    if (req.query.attorney) filter.attorneys = req.query.attorney;
-    if (req.query.status) filter.status = req.query.status;
-    if (req.query.type) filter.caseType = req.query.type;
+    if (req.query.client) filters.client = req.query.client;
+    if (req.query.attorney) filters.attorneys = req.query.attorney;
+    if (req.query.status) filters.status = req.query.status;
+    if (req.query.type) filters.caseType = req.query.type;
     
     // Date range filters
-    if (req.query.openedAfter) filter.openDate = { $gte: new Date(req.query.openedAfter as string) };
-    if (req.query.openedBefore) {
-      filter.openDate = filter.openDate || {};
-      filter.openDate.$lte = new Date(req.query.openedBefore as string);
-    }
+    if (req.query.openedAfter) filters.openedAfter = req.query.openedAfter as string;
+    if (req.query.openedBefore) filters.openedBefore = req.query.openedBefore as string;
     
     // Tag filtering
-    if (req.query.tags) {
-      const tags = (req.query.tags as string).split(',');
-      filter.tags = { $in: tags };
-    }
+    if (req.query.tags) filters.tags = req.query.tags as string;
     
-    const cases = await Case.find(filter)
-      .populate('client', 'firstName lastName company')
-      .populate('attorneys', 'firstName lastName')
-      .populate('paralegal', 'firstName lastName')
-      .sort({ openDate: -1 });
+    // Use the CaseService to get filtered cases
+    const cases = await CaseService.getAllCases(filters);
     
     res.status(200).json({
       success: true,
@@ -49,11 +37,7 @@ export const getAllCases = async (req: Request, res: Response, next: NextFunctio
 // Get a single case by ID
 export const getCaseById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const caseItem = await Case.findOne({ _id: req.params.id, isDeleted: false })
-      .populate('client', 'firstName lastName company')
-      .populate('attorneys', 'firstName lastName email')
-      .populate('paralegal', 'firstName lastName email')
-      .populate('parties');
+    const caseItem = await CaseService.getCaseById(req.params.id);
     
     if (!caseItem) {
       return res.status(404).json({
@@ -74,15 +58,31 @@ export const getCaseById = async (req: Request, res: Response, next: NextFunctio
 // Create a new case
 export const createCase = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Generate case number
-    const caseNumber = await Case.generateCaseNumber();
-    req.body.caseNumber = caseNumber;
+    // Extract note data if provided
+    const noteData = req.body.notes;
+    delete req.body.notes;
     
-    // Set initial values
-    req.body.status = CaseStatus.OPEN;
-    req.body.openDate = new Date();
+    // Create the case using the service
+    const caseItem = await CaseService.createCase(req.body);
     
-    const caseItem = await Case.create(req.body);
+    // Create activity log for case creation
+    await Activity.create({
+      case: caseItem._id,
+      action: 'create',
+      description: `Case ${caseItem.caseNumber} was created`,
+      performedBy: (req.user as any)?._id || '',
+      timestamp: new Date()
+    });
+    
+    // Create note if provided
+    if (noteData && noteData !== '') {
+      await Note.create({
+        case: caseItem._id,
+        client: caseItem.client,
+        createdBy: (req.user as any)?._id || '',
+        content: noteData
+      });
+    }
     
     res.status(201).json({
       success: true,
@@ -96,34 +96,37 @@ export const createCase = async (req: Request, res: Response, next: NextFunction
 // Update a case
 export const updateCase = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Check if case exists and is not deleted
-    const caseItem = await Case.findOne({ _id: req.params.id, isDeleted: false });
+    // Extract note data if provided
+    const noteData = req.body.note;
+    delete req.body.note;
     
-    if (!caseItem) {
+    const updatedCase = await CaseService.updateCase(req.params.id, req.body);
+    
+    if (!updatedCase) {
       return res.status(404).json({
         success: false,
         message: 'Case not found'
       });
     }
     
-    // Don't allow updating caseNumber
-    if (req.body.caseNumber) {
-      delete req.body.caseNumber;
-    }
+    // Create activity log for case update
+    await Activity.create({
+      case: updatedCase._id,
+      action: 'update',
+      description: `Case ${updatedCase.caseNumber} was updated`,
+      performedBy: (req.user as any)?.id || '',
+      timestamp: new Date()
+    });
     
-    // If status is changing to closed, set closeDate
-    if (req.body.status === CaseStatus.CLOSED && caseItem.status !== CaseStatus.CLOSED) {
-      req.body.closeDate = new Date();
+    // Create note if provided
+    if (noteData && noteData.content) {
+      await Note.create({
+        case: updatedCase._id,
+        client: updatedCase.client,
+        createdBy: (req.user as any)?.id || '',
+        content: noteData.content
+      });
     }
-    
-    const updatedCase = await Case.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    )
-      .populate('client', 'firstName lastName company')
-      .populate('attorneys', 'firstName lastName')
-      .populate('paralegal', 'firstName lastName');
     
     res.status(200).json({
       success: true,
@@ -137,18 +140,23 @@ export const updateCase = async (req: Request, res: Response, next: NextFunction
 // Delete a case (soft delete)
 export const deleteCase = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const caseItem = await Case.findById(req.params.id);
+    const success = await CaseService.deleteCase(req.params.id);
     
-    if (!caseItem) {
+    if (!success) {
       return res.status(404).json({
         success: false,
         message: 'Case not found'
       });
     }
     
-    // Soft delete by setting isDeleted flag
-    caseItem.isDeleted = true;
-    await caseItem.save();
+    // Create activity log for case deletion
+    await Activity.create({
+      case: req.params.id,
+      action: 'delete',
+      description: 'Case was deleted',
+      performedBy: (req.user as any)?.id || '',
+      timestamp: new Date()
+    });
     
     res.status(200).json({
       success: true,
@@ -162,7 +170,7 @@ export const deleteCase = async (req: Request, res: Response, next: NextFunction
 // Add a party to a case
 export const addCaseParty = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const caseItem = await Case.findOne({ _id: req.params.id, isDeleted: false });
+    const caseItem = await CaseService.addCaseParty(req.params.id, req.body);
     
     if (!caseItem) {
       return res.status(404).json({
@@ -171,8 +179,14 @@ export const addCaseParty = async (req: Request, res: Response, next: NextFuncti
       });
     }
     
-    caseItem.parties.push(req.body);
-    await caseItem.save();
+    // Create activity log for adding party
+    await Activity.create({
+      case: req.params.id,
+      action: 'add_party',
+      description: `Added ${req.body.name} as ${req.body.role} to the case`,
+      performedBy: (req.user as any)?.id || '',
+      timestamp: new Date()
+    });
     
     res.status(200).json({
       success: true,
@@ -186,7 +200,7 @@ export const addCaseParty = async (req: Request, res: Response, next: NextFuncti
 // Remove a party from a case
 export const removeCaseParty = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const caseItem = await Case.findOne({ _id: req.params.id, isDeleted: false });
+    const caseItem = await CaseService.removeCaseParty(req.params.id, req.params.partyId);
     
     if (!caseItem) {
       return res.status(404).json({
@@ -195,11 +209,14 @@ export const removeCaseParty = async (req: Request, res: Response, next: NextFun
       });
     }
     
-    caseItem.parties = caseItem.parties.filter(
-      (party: ICaseParty & { _id: { toString(): string } }) => party._id.toString() !== req.params.partyId
-    );
-    
-    await caseItem.save();
+    // Create activity log for removing party
+    await Activity.create({
+      case: req.params.id,
+      action: 'remove_party',
+      description: `Removed a party from the case`,
+      performedBy: (req.user as any)?.id || '',
+      timestamp: new Date()
+    });
     
     res.status(200).json({
       success: true,

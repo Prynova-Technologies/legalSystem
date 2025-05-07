@@ -2,6 +2,8 @@ import Case from '../models/case.model';
 import Task from '../models/task.model';
 import TimeEntry from '../models/timeEntry.model';
 import Document from '../models/document.model';
+import Activity from '../models/activity.model';
+import Note from '../models/note.model';
 import { CaseStatus, ICaseParty, ICaseActivity } from '../interfaces/case.interface';
 import logger from '../utils/logger';
 
@@ -35,9 +37,6 @@ export class CaseService {
       }
       
       return await Case.find(filter)
-        .populate('client', 'firstName lastName company')
-        .populate('attorneys', 'firstName lastName')
-        .populate('paralegal', 'firstName lastName')
         .sort({ openDate: -1 });
     } catch (error) {
       logger.error('Error fetching cases', { error, filters });
@@ -46,15 +45,50 @@ export class CaseService {
   }
 
   /**
-   * Get a single case by ID
+   * Get a single case by ID with related notes, activities, tasks, and documents
    */
   static async getCaseById(caseId: string): Promise<any | null> {
     try {
-      return await Case.findOne({ _id: caseId, isDeleted: false })
+      // Fetch the case with populated references
+      const caseItem = await Case.findOne({ _id: caseId, isDeleted: false })
         .populate('client', 'firstName lastName company')
-        .populate('attorneys', 'firstName lastName email')
-        .populate('paralegal', 'firstName lastName email')
+        .populate('assignedAttorneys', 'firstName lastName email')
+        .populate('assignedParalegals', 'firstName lastName email')
         .populate('parties');
+      
+      if (!caseItem) return null;
+      
+      // Fetch related notes
+      const notes = await Note.find({ case: caseId })
+        .populate('createdBy', 'firstName lastName')
+        .sort({ createdAt: -1 });
+      
+      // Fetch related activities
+      const activities = await Activity.find({ case: caseId })
+        .populate('performedBy', 'firstName lastName')
+        .sort({ timestamp: -1 });
+      
+      // Fetch related tasks
+      const tasks = await Task.find({ case: caseId, isDeleted: false })
+        .populate('assignedTo', 'firstName lastName')
+        .sort({ dueDate: 1 });
+      
+      // Fetch related documents
+      const documents = await Document.find({ case: caseId, isDeleted: false })
+        .populate('uploadedBy', 'firstName lastName')
+        .sort({ createdAt: -1 });
+      
+      // Convert to plain object to allow adding properties
+      const caseObject = caseItem.toObject ? caseItem.toObject() : caseItem;
+      
+      // Attach related data to the case object
+      caseObject.notes = notes;
+      caseObject.activities = activities;
+      caseObject.tasks = tasks;
+      caseObject.documents = documents;
+      
+      logger.info('Case fetched with related data', { caseId });
+      return caseObject;
     } catch (error) {
       logger.error('Error fetching case by ID', { error, caseId });
       throw error;
@@ -73,8 +107,9 @@ export class CaseService {
       // Set initial values
       caseData.status = CaseStatus.OPEN;
       caseData.openDate = new Date();
-      
+
       const caseItem = await Case.create(caseData);
+      
       logger.info('New case created', { caseId: caseItem._id, caseNumber });
       return caseItem;
     } catch (error) {
@@ -188,8 +223,14 @@ export class CaseService {
       const caseItem = await Case.findOne({ _id: caseId, isDeleted: false });
       if (!caseItem) return null;
       
-      caseItem.activityLog.push(activityData);
-      await caseItem.save();
+      // Create activity using the Activity model
+      await Activity.create({
+        case: caseId,
+        action: activityData.action,
+        description: activityData.description,
+        performedBy: activityData.performedBy,
+        timestamp: activityData.timestamp || new Date()
+      });
       
       logger.info('Case activity added', { caseId });
       return caseItem;
@@ -316,8 +357,12 @@ export class CaseService {
       const caseItem = await Case.findOne({ _id: caseId, isDeleted: false });
       if (!caseItem) return [];
       
-      // Get case activities
-      const activities = caseItem.activityLog.map((activity: ICaseActivity & { toObject?: () => any }) => ({
+      // Get case activities from Activity model
+      const activityRecords = await Activity.find({ case: caseId })
+        .populate('performedBy', 'firstName lastName')
+        .sort({ timestamp: -1 });
+        
+      const activities = activityRecords.map((activity) => ({
         type: 'activity',
         ...(activity.toObject ? activity.toObject() : activity),
         timestamp: activity.timestamp

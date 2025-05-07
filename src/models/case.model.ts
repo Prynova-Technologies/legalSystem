@@ -74,10 +74,25 @@ const caseSchema = new Schema<ICaseDocument, ICaseModel>(
       ref: 'Client',
       required: [true, 'Client is required'],
     },
+    isOpen: {
+      type: Boolean,
+      default: true,
+    },
+    clientRole: {
+      type: String,
+      enum: ['plaintiff', 'defendant'],
+      required: [true, 'Client role is required'],
+    },
     assignedAttorneys: [
       {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
+        attorney: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        isPrimary: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
     assignedParalegals: [
@@ -99,8 +114,8 @@ const caseSchema = new Schema<ICaseDocument, ICaseModel>(
       default: Date.now,
     },
     closeDate: Date,
-    activityLog: [caseActivitySchema],
-    notes: String,
+    // activityLog and notes are now standalone models
+
     tags: [String],
     isDeleted: {
       type: Boolean,
@@ -114,12 +129,25 @@ const caseSchema = new Schema<ICaseDocument, ICaseModel>(
   }
 );
 
-// Method to add activity to the case log
-caseSchema.methods.addActivity = function (action: string, description: string, userId: string) {
-  this.activityLog.push({
+// Method to add activity to the case log (now uses Activity model)
+caseSchema.methods.addActivity = async function (action: string, description: string, userId: string) {
+  const Activity = mongoose.model('Activity');
+  await Activity.create({
+    case: this._id,
     action,
     description,
     performedBy: userId,
+    timestamp: new Date(),
+  });
+};
+
+caseSchema.methods.addNote = async function (client: string, content: string, userId: string) {
+  const Note = mongoose.model('Note');
+  await Note.create({
+    case: this._id,
+    client,
+    content,
+    createdBy: userId,
     timestamp: new Date(),
   });
 };

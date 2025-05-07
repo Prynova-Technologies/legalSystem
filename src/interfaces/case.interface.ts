@@ -39,6 +39,11 @@ export interface ICaseActivity {
   timestamp: Date;
 }
 
+export interface IAssignedAttorney {
+  attorney: string | IUserDocument;
+  isPrimary: boolean;
+}
+
 export interface ICase {
   caseNumber: string;
   title: string;
@@ -46,7 +51,8 @@ export interface ICase {
   type: CaseType;
   status: CaseStatus;
   client: string | IClientDocument;
-  assignedAttorneys: (string | IUserDocument)[];
+  clientRole: 'plaintiff' | 'defendant';
+  assignedAttorneys: IAssignedAttorney[];
   assignedParalegals?: (string | IUserDocument)[];
   parties: ICaseParty[];
   courtDetails?: {
@@ -56,10 +62,9 @@ export interface ICase {
     caseNumber?: string;
     filingDate?: Date;
   };
+  isOpen: boolean;
   openDate: Date;
   closeDate?: Date;
-  activityLog: ICaseActivity[];
-  notes?: string;
   tags?: string[];
   isDeleted: boolean;
 }
@@ -68,7 +73,13 @@ export interface ICaseDocument extends ICase, Document {
   _id: string;
   createdAt: Date;
   updatedAt: Date;
-  addActivity(action: string, description: string, userId: string): void;
+  addActivity(action: string, description: string, userId: string): Promise<void>;
+  
+  // Related collections that can be attached to a case object
+  notes?: Array<import('../models/note.model').INote>;
+  activities?: Array<import('../models/activity.model').IActivity>;
+  tasks?: Array<import('./task.interface').ITaskDocument>;
+  documents?: Array<import('./document.interface').IDocumentDocument>;
 }
 
 export interface ICaseModel extends Model<ICaseDocument> {
