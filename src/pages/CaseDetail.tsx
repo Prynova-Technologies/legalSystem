@@ -7,6 +7,7 @@ import { fetchTasks } from '../store/slices/tasksSlice';
 import { fetchDocuments } from '../store/slices/documentsSlice';
 import { CaseStatus, CaseType, Note } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import '../styles/caseDetail.css';
 
 const CaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -250,6 +251,12 @@ const CaseDetail: React.FC = () => {
               Notes ({currentCase.notes?.length})
             </button>
             <button
+              className={`tab-button ${activeTab === 'activities' ? 'active' : ''}`}
+              onClick={() => handleTabChange('activities')}
+            >
+              Activities ({currentCase.activities?.length || 0})
+            </button>
+            <button
               className={`tab-button ${activeTab === 'billing' ? 'active' : ''}`}
               onClick={() => handleTabChange('billing')}
             >
@@ -277,6 +284,36 @@ const CaseDetail: React.FC = () => {
                         <span className="detail-value">{formatDate(currentCase.closeDate)}</span>
                       </div>
                     )}
+                    {currentCase.assignedAttorneys && currentCase.assignedAttorneys.length > 0 && (
+                      <div className="detail-item">
+                        <span className="detail-label">Primary Attorney:</span>
+                        <span className="detail-value">
+                          {currentCase.assignedAttorneys.find(attorney => attorney.isPrimary)?.attorney?.firstName + ' ' + 
+                           currentCase.assignedAttorneys.find(attorney => attorney.isPrimary)?.attorney?.lastName || 'Not assigned'}
+                        </span>
+                      </div>
+                    )}
+                    {currentCase.assignedAttorneys && currentCase.assignedAttorneys.filter(attorney => !attorney.isPrimary).length > 0 && (
+                      <div className="detail-item">
+                        <span className="detail-label">Assigned Attorneys:</span>
+                        <span className="detail-value">
+                          {currentCase.assignedAttorneys
+                            .filter(attorney => !attorney.isPrimary)
+                            .map(attorney => attorney.attorney?.firstName + ' ' + attorney.attorney?.lastName)
+                            .join(', ') || 'None'}
+                        </span>
+                      </div>
+                    )}
+                    {currentCase.assignedParalegals && currentCase.assignedParalegals.length > 0 && (
+                      <div className="detail-item">
+                        <span className="detail-label">Assigned Paralegals:</span>
+                        <span className="detail-value">
+                          {currentCase.assignedParalegals.map(paralegal => 
+                            typeof paralegal === 'string' ? paralegal : 
+                            paralegal.firstName + ' ' + paralegal.lastName).join(', ')}
+                        </span>
+                      </div>
+                    )}
                     <div className="detail-item">
                       <span className="detail-label">Description:</span>
                       <p className="detail-value description">{currentCase.description}</p>
@@ -289,7 +326,7 @@ const CaseDetail: React.FC = () => {
                       <>
                         <div className="detail-item">
                           <span className="detail-label">Court:</span>
-                          <span className="detail-value">{currentCase.courtDetails.courtName}</span>
+                          <span className="detail-value">{currentCase.courtDetails.court}</span>
                         </div>
                         <div className="detail-item">
                           <span className="detail-label">Jurisdiction:</span>
@@ -301,10 +338,10 @@ const CaseDetail: React.FC = () => {
                             <span className="detail-value">{currentCase.courtDetails.judge}</span>
                           </div>
                         )}
-                        {currentCase.courtDetails.filingNumber && (
+                        {currentCase.courtDetails.caseNumber && (
                           <div className="detail-item">
                             <span className="detail-label">Filing Number:</span>
-                            <span className="detail-value">{currentCase.courtDetails.filingNumber}</span>
+                            <span className="detail-value">{currentCase.courtDetails.caseNumber}</span>
                           </div>
                         )}
                       </>
@@ -424,11 +461,11 @@ const CaseDetail: React.FC = () => {
                   <h3>Case Notes</h3>
                   {currentCase.notes.length > 0 ? (
                     currentCase.notes.map(note => (
-                      <div key={note.id} className="note-item">
+                      <div key={note._id} className="note-item">
                         <div className="note-content">{note.content}</div>
                         <div className="note-meta">
                           <span>Created: {formatDate(note.createdAt)}</span>
-                          <span>By: User ID {note.createdBy}</span>
+                          <span>Created By: {note.createdBy.fullName}</span>
                         </div>
                       </div>
                     ))
