@@ -209,6 +209,35 @@ export const caseService = {
       console.error('Error fetching case statistics:', error);
       throw error;
     }
+  },
+  
+  /**
+   * Add a note to a case
+   * @param token User authentication token
+   * @param caseId Case ID
+   * @param note Note data
+   */
+  addCaseNote: async (token: string, caseId: string, note: any) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.CASES.DETAIL(caseId)}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(note)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to add case note: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error(`Error adding note to case ${caseId}:`, error);
+      throw error;
+    }
   }
 };
 

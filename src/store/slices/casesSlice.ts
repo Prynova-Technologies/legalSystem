@@ -137,6 +137,25 @@ export const deleteCase = createAsyncThunk(
   }
 );
 
+export const addCaseNoteAsync = createAsyncThunk(
+  'cases/addCaseNote',
+  async ({ caseId, note }: { caseId: string; note: any }, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      if (!token) {
+        return rejectWithValue('Authentication token not found');
+      }
+      
+      const result = await caseService.addCaseNote(token, caseId, note);
+      return { caseId, note };
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to add case note');
+    }
+  }
+);
+
 const casesSlice = createSlice({
   name: 'cases',
   initialState,
@@ -242,6 +261,39 @@ const casesSlice = createSlice({
         }
       })
       .addCase(deleteCase.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Add case note
+      .addCase(addCaseNoteAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(addCaseNoteAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const { caseId, note } = action.payload;
+        
+        // Update in cases array
+        const caseIndex = state.cases.findIndex(c => c.id === caseId);
+        if (caseIndex !== -1) {
+          if (!state.cases[caseIndex].notes) {
+            state.cases[caseIndex].notes = [];
+          }
+          state.cases[caseIndex].notes.push(note);
+          state.cases[caseIndex].updatedAt = new Date().toISOString();
+        }
+        
+        // Update current case if it's the one being modified
+        if (state.currentCase && state.currentCase.id === caseId) {
+          if (!state.currentCase.notes) {
+            state.currentCase.notes = [];
+          }
+          state.currentCase.notes.push(note);
+          state.currentCase.updatedAt = new Date().toISOString();
+        }
+      })
+      .addCase(addCaseNoteAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

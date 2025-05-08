@@ -104,8 +104,10 @@ const CaseDetail: React.FC = () => {
       };
 
       try {
-        // await dispatch(addCaseNote({ caseId: id, note: newNote }) as any);
+        await dispatch(addCaseNote({ caseId: id, note: newNote }) as any);
         setNoteContent('');
+        // Refresh case data to show the newly added note
+        await _handleRefreshData();
       } catch (error) {
         console.error('Failed to add note:', error);
       }
@@ -132,6 +134,18 @@ const CaseDetail: React.FC = () => {
   // Filter case-related tasks and documents
   const caseTasks = currentCase.tasks;
   const caseDocuments = currentCase.documents;
+
+  const getContact = (contacts, type) => {
+   let found = contacts.find(c => c.type === type);
+
+   if(type === 'address') {
+    let value  = JSON.parse(found.value)
+
+    return value.street + ", " + value.city + ", " + value.country
+  }
+
+   return found.value;
+  }
 
   return (
     <div className="case-detail-container">
@@ -322,9 +336,53 @@ const CaseDetail: React.FC = () => {
                       </div>
                     )}
                     <div className="detail-item">
+                      <span className="detail-label">Client Role:</span>
+                      <p className="detail-value description">{currentCase.clientRole}</p>
+                    </div>
+                    <div className="detail-item">
                       <span className="detail-label">Description:</span>
                       <p className="detail-value description">{currentCase.description}</p>
                     </div>
+                  </div>
+
+                  <div className="detail-card">
+                    <h3>Client Information</h3>
+                    {currentCase.client ? (
+                      <>
+                        <div className="detail-item">
+                          <span className="detail-label">Name:</span>
+                          <span className="detail-value">
+                            {currentCase.client.firstName} {currentCase.client.lastName}
+                          </span>
+                        </div>
+                        {currentCase.client.company && (
+                          <div className="detail-item">
+                            <span className="detail-label">Company:</span>
+                            <span className="detail-value">{currentCase.client.company}</span>
+                          </div>
+                        )}
+                        {currentCase.client.contacts && (
+                          <div className="detail-item">
+                            <span className="detail-label">Email:</span>
+                            <span className="detail-value">{getContact(currentCase.client.contacts, 'email')}</span>
+                          </div>
+                        )}
+                        {currentCase.client.contacts && (
+                          <div className="detail-item">
+                            <span className="detail-label">Phone:</span>
+                            <span className="detail-value">{getContact(currentCase.client.contacts, 'phone')}</span>
+                          </div>
+                        )}
+                        {currentCase.client.contacts && (
+                          <div className="detail-item">
+                            <span className="detail-label">Address:</span>
+                            <span className="detail-value">{getContact(currentCase.client.contacts, 'address')}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="empty-state">No client information available</p>
+                    )}
                   </div>
 
                   <div className="detail-card">
