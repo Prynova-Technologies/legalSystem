@@ -8,6 +8,8 @@ import { fetchDocuments } from '../store/slices/documentsSlice';
 import { CaseStatus, CaseType, Note } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import '../styles/caseDetail.css';
+import { DocumentUploadModal, DocumentCard } from '../components/documents';
+import { FaIcons } from 'react-icons/fa';
 
 const CaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +31,7 @@ const CaseDetail: React.FC = () => {
     status: '' as CaseStatus,
     caseType: '' as CaseType
   });
+  const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -37,6 +40,10 @@ const CaseDetail: React.FC = () => {
       dispatch(fetchDocuments() as any);
     }
   }, [dispatch, id]);
+
+  const _handleRefreshData = async () => {
+    dispatch(fetchCaseById(id) as any);
+  }
 
   useEffect(() => {
     if (currentCase) {
@@ -411,28 +418,28 @@ const CaseDetail: React.FC = () => {
             {activeTab === 'documents' && (
               <div className="documents-tab">
                 <div className="tab-header-actions">
-                  <button className="btn btn-primary" onClick={() => navigate(`/documents/upload?caseId=${id}`)}>Upload Document</button>
+                  <button className="btn btn-primary" onClick={() => setIsDocumentUploadModalOpen(true)}>
+                  📄 Upload Document
+                  </button>
                 </div>
                 
+                {/* Document Upload Modal */}
+                <DocumentUploadModal 
+                  isOpen={isDocumentUploadModalOpen}
+                  onClose={() => setIsDocumentUploadModalOpen(false)}
+                  clientId={id}
+                  onUploadFinish={_handleRefreshData}
+                />
+                
                 {caseDocuments.length > 0 ? (
-                  <div className="documents-list">
+                  <div className="documents-grid">
                     {caseDocuments.map(doc => (
-                      <div key={doc.id} className="document-item">
-                        <div className="document-icon">📄</div>
-                        <div className="document-info">
-                          <h4 className="document-title">{doc.name}</h4>
-                          <p className="document-description">{doc.description}</p>
-                          <div className="document-meta">
-                            <span>Type: {doc.fileType}</span>
-                            <span>Size: {(doc.size / 1024).toFixed(2)} KB</span>
-                            <span>Uploaded: {formatDate(doc.uploadedAt)}</span>
-                          </div>
-                        </div>
-                        <div className="document-actions">
-                          <button className="btn btn-sm" onClick={() => window.open(doc.url, '_blank')}>View</button>
-                          <button className="btn btn-sm btn-outline" onClick={() => navigate(`/documents/${doc.id}`)}>Details</button>
-                        </div>
-                      </div>
+                      <DocumentCard
+                        key={doc._id}
+                        document={doc}
+                        onPreview={() => window.open(doc.versions[0].filePath, '_blank')}
+                        onDownload={() => window.open(doc.versions[0].filePath, '_blank')}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -476,6 +483,46 @@ const CaseDetail: React.FC = () => {
               </div>
             )}
 
+            {activeTab === 'activities' && (
+              <div className="activities-tab">
+                <h3>Case Activity Timeline</h3>
+                {currentCase.activities && currentCase.activities.length > 0 ? (
+                  <div className="timeline">
+                    {currentCase.activities.map(activity => (
+                      <div key={activity._id} className="timeline-item">
+                        <div className="timeline-marker"></div>
+                        <div className="timeline-content">
+                          <div className="timeline-date">{formatDate(activity.timestamp)}</div>
+                          <div className="timeline-title">
+                            <span className={`activity-badge activity-${activity.action}`}>
+                              {activity.action.replace('_', ' ')}
+                            </span>
+                            {activity.action === 'create' && 'Case Created'}
+                            {activity.action === 'update' && 'Case Updated'}
+                            {activity.action === 'delete' && 'Case Deleted'}
+                            {activity.action === 'add_party' && 'Party Added'}
+                            {activity.action === 'remove_party' && 'Party Removed'}
+                            {!['create', 'update', 'delete', 'add_party', 'remove_party'].includes(activity.action) && 
+                              activity.action.replace('_', ' ')}
+                          </div>
+                          <div className="timeline-description">{activity.description}</div>
+                          {activity.performedBy && (
+                            <div className="timeline-user">
+                              By: {typeof activity.performedBy === 'string' 
+                                ? activity.performedBy 
+                                : `${activity.performedBy.firstName} ${activity.performedBy.lastName}`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty-state">No activities recorded for this case</p>
+                )}
+              </div>
+            )}
+
             {activeTab === 'billing' && (
               <div className="billing-tab">
                 <div className="billing-info-section">
@@ -483,34 +530,34 @@ const CaseDetail: React.FC = () => {
                   <div className="billing-details">
                     <div className="detail-item">
                       <span className="detail-label">Billing Type:</span>
-                      <span className="detail-value">{currentCase.billingInfo.billingType.replace('_', ' ')}</span>
+                      <span className="detail-value">{currentCase.billingInfo?.billingType?.replace('_', ' ')}</span>
                     </div>
                     
-                    {currentCase.billingInfo.hourlyRate && (
+                    {currentCase.billingInfo?.hourlyRate && (
                       <div className="detail-item">
                         <span className="detail-label">Hourly Rate:</span>
-                        <span className="detail-value">${currentCase.billingInfo.hourlyRate}/hr</span>
+                        <span className="detail-value">${currentCase.billingInfo?.hourlyRate}/hr</span>
                       </div>
                     )}
                     
-                    {currentCase.billingInfo.flatRate && (
+                    {currentCase.billingInfo?.flatRate && (
                       <div className="detail-item">
                         <span className="detail-label">Flat Rate:</span>
-                        <span className="detail-value">${currentCase.billingInfo.flatRate}</span>
+                        <span className="detail-value">${currentCase.billingInfo?.flatRate}</span>
                       </div>
                     )}
                     
-                    {currentCase.billingInfo.contingencyPercentage && (
+                    {currentCase.billingInfo?.contingencyPercentage && (
                       <div className="detail-item">
                         <span className="detail-label">Contingency:</span>
-                        <span className="detail-value">{currentCase.billingInfo.contingencyPercentage}%</span>
+                        <span className="detail-value">{currentCase.billingInfo?.contingencyPercentage}%</span>
                       </div>
                     )}
                     
-                    {currentCase.billingInfo.retainerAmount && (
+                    {currentCase.billingInfo?.retainerAmount && (
                       <div className="detail-item">
                         <span className="detail-label">Retainer Amount:</span>
-                        <span className="detail-value">${currentCase.billingInfo.retainerAmount}</span>
+                        <span className="detail-value">${currentCase.billingInfo?.retainerAmount}</span>
                       </div>
                     )}
                   </div>
@@ -522,7 +569,7 @@ const CaseDetail: React.FC = () => {
                     <button className="btn btn-primary" onClick={() => navigate(`/billing/time-entry/new?caseId=${id}`)}>Add Time Entry</button>
                   </div>
                   
-                  {currentCase.billingInfo.timeEntries.length > 0 ? (
+                  {currentCase.billingInfo?.timeEntries.length > 0 ? (
                     <table className="time-entries-table">
                       <thead>
                         <tr>
@@ -554,7 +601,7 @@ const CaseDetail: React.FC = () => {
                     <button className="btn btn-primary" onClick={() => navigate(`/billing/expense/new?caseId=${id}`)}>Add Expense</button>
                   </div>
                   
-                  {currentCase.billingInfo.expenses.length > 0 ? (
+                  {currentCase.billingInfo?.expenses.length > 0 ? (
                     <table className="expenses-table">
                       <thead>
                         <tr>
@@ -566,7 +613,7 @@ const CaseDetail: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {currentCase.billingInfo.expenses.map(expense => (
+                        {currentCase.billingInfo?.expenses?.map(expense => (
                           <tr key={expense.id}>
                             <td>{formatDate(expense.date)}</td>
                             <td>{expense.description}</td>
@@ -588,7 +635,7 @@ const CaseDetail: React.FC = () => {
                     <button className="btn btn-primary" onClick={() => navigate(`/billing/invoice/new?caseId=${id}`)}>Create Invoice</button>
                   </div>
                   
-                  {currentCase.billingInfo.invoices.length > 0 ? (
+                  {currentCase.billingInfo?.invoices?.length > 0 ? (
                     <table className="invoices-table">
                       <thead>
                         <tr>
@@ -601,7 +648,7 @@ const CaseDetail: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {currentCase.billingInfo.invoices.map(invoice => (
+                        {currentCase.billingInfo?.invoices?.map(invoice => (
                           <tr key={invoice.id}>
                             <td>{invoice.invoiceNumber}</td>
                             <td>{formatDate(invoice.issueDate)}</td>

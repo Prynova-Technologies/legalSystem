@@ -10,9 +10,10 @@ interface DocumentUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   clientId: string;
+  onUploadFinish: () => void;
 }
 
-const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClose, clientId }) => {
+const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClose, clientId, onUploadFinish }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   
@@ -104,6 +105,9 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
       
       // Refresh documents list
       dispatch(fetchDocuments() as any);
+
+      //signal parent file
+      onUploadFinish()
       
       // Close modal and reset form
       onClose();
