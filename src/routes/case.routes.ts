@@ -9,7 +9,8 @@ import {
   removeCaseParty,
   addCaseActivity,
   getCaseStatistics,
-  getCaseTimeline
+  getCaseTimeline,
+  addCaseNote
 } from '../controllers/case.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { UserRole } from '../interfaces/user.interface';
@@ -51,6 +52,13 @@ router.post(
   '/:id/activities',
   authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]),
   addCaseActivity
+);
+
+// Case note management
+router.post(
+  '/:id/notes',
+  authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]),
+  addCaseNote
 );
 
 // Basic CRUD routes

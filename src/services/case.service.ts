@@ -51,7 +51,7 @@ export class CaseService {
     try {
       // Fetch the case with populated references
       const caseItem = await Case.findOne({ _id: caseId, isDeleted: false })
-        .populate('client', 'firstName lastName company')
+        .populate('client', 'firstName lastName company contacts')
         .populate('assignedAttorneys.attorney', 'firstName lastName email assignedAttorneys.isPrimary')
         .populate('assignedParalegals', 'firstName lastName email')
         .populate('parties');
@@ -74,8 +74,8 @@ export class CaseService {
         .sort({ dueDate: 1 });
       
       // Fetch related documents
-      const documents = await Document.find({ case: caseId, isDeleted: false })
-        .populate('uploadedBy', 'firstName lastName')
+      const documents = await Document.find({ client: caseId, isDeleted: false })
+        .populate('createdBy', 'firstName lastName')
         .sort({ createdAt: -1 });
       
       // Convert to plain object to allow adding properties

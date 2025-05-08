@@ -286,3 +286,44 @@ export const getCaseTimeline = async (req: Request, res: Response, next: NextFun
     next(error);
   }
 };
+
+// Add a note to a case
+export const addCaseNote = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Check if case exists
+    const caseItem = await CaseService.getCaseById(req.params.id);
+    
+    if (!caseItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+    
+    // Create the note
+    const note = await Note.create({
+      case: req.params.id,
+      client: caseItem.client,
+      createdBy: (req.user as any)?._id || '',
+      content: req.body.content,
+      title: req.body.title || 'Case Note',
+      tags: req.body.tags || []
+    });
+    
+    // Create activity log for adding note
+    await Activity.create({
+      case: req.params.id,
+      action: 'add_note',
+      description: `Added a note to the case`,
+      performedBy: (req.user as any)?._id || '',
+      timestamp: new Date()
+    });
+    
+    res.status(201).json({
+      success: true,
+      data: note
+    });
+  } catch (error) {
+    next(error);
+  }
+};
