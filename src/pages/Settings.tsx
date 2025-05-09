@@ -632,39 +632,23 @@ const Settings: React.FC = () => {
   // Remove duplicate isAdmin declaration
   return (
     <div className="settings-container">
-      <div className="page-header">
-        <h1>Settings</h1>
-      </div>
+      <Tabs
+        tabs={[
+          { id: 'security', label: 'Security' },
+          { id: 'user-management', label: 'User Management' },
+          { id: 'system', label: 'System' },
+          { id: 'preferences', label: 'Preferences' },
+          { id: 'audit-logs', label: 'Audit Logs' }
+        ]}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
       
-      {isLoading ? (
-        <div className="loading-indicator">Loading settings...</div>
-      ) : error ? (
-        <div className="error-message">{error}</div>
-      ) : (
-        <div className="settings-layout">
-          <div className="settings-tabs-container">
-            <Tabs
-              tabs={[
-                { id: 'security', label: 'Security', icon: <FaIcons.FaShieldAlt /> },
-                { id: 'user-management', label: 'User Management', icon: <FaIcons.FaUsers />, hidden: !isAdmin },
-                { id: 'system', label: 'System', icon: <FaIcons.FaCogs />, hidden: !isAdmin },
-                { id: 'preferences', label: 'Preferences', icon: <FaIcons.FaUserCog /> },
-                { id: 'audit-logs', label: 'Audit Logs', icon: <FaIcons.FaHistory />, hidden: !isAdmin }
-              ]}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              variant="default"
-            />
-          </div>
-          <div className="settings-content">
-            {activeTab === 'security' && renderSecurityTab()}
-            {activeTab === 'user-management' && isAdmin && renderUserManagementTab()}
-            {activeTab === 'system' && isAdmin && renderSystemTab()}
-            {activeTab === 'preferences' && renderPreferencesTab()}
-            {activeTab === 'audit-logs' && isAdmin && renderAuditLogsTab()}
-          </div>
-        </div>
-      )}
+      {activeTab === 'security' && renderSecurityTab()}
+      {activeTab === 'user-management' && renderUserManagementTab()}
+      {activeTab === 'system' && renderSystemTab()}
+      {activeTab === 'preferences' && renderPreferencesTab()}
+      {activeTab === 'audit-logs' && renderAuditLogsTab()}
     </div>
   );
 };
