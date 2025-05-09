@@ -31,11 +31,10 @@ const taskSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Case',
     },
-    assignedTo: {
+    assignedTo: [{
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Task must be assigned to a user'],
-    },
+    }],
     assignedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

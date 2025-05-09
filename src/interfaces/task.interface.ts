@@ -27,7 +27,7 @@ export interface ITask {
   title: string;
   description: string;
   case?: string | ICaseDocument;
-  assignedTo: string | IUserDocument;
+  assignedTo: string[] | IUserDocument[];
   assignedBy: string | IUserDocument;
   priority: TaskPriority;
   status: TaskStatus;

@@ -10,7 +10,8 @@ import {
   addCaseActivity,
   getCaseStatistics,
   getCaseTimeline,
-  addCaseNote
+  addCaseNote,
+  addCaseTask
 } from '../controllers/case.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { UserRole } from '../interfaces/user.interface';
@@ -59,6 +60,13 @@ router.post(
   '/:id/notes',
   authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]),
   addCaseNote
+);
+
+// Add task to case
+router.post(
+  '/:id/tasks',
+  authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]),
+  addCaseTask
 );
 
 // Basic CRUD routes

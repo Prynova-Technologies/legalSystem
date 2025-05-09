@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import Note from '../models/note.model';
 import Activity from '../models/activity.model';
 import { CaseService } from '../services/case.service';
+import { TaskService } from '../services/task.service';
 
 // Get all cases with filtering options
 export const getAllCases = async (req: Request, res: Response, next: NextFunction) => {
@@ -305,7 +306,7 @@ export const addCaseNote = async (req: Request, res: Response, next: NextFunctio
       case: req.params.id,
       client: caseItem.client,
       createdBy: (req.user as any)?._id || '',
-      content: req.body.content,
+      content: req.body.note,
       title: req.body.title || 'Case Note',
       tags: req.body.tags || []
     });
@@ -322,6 +323,51 @@ export const addCaseNote = async (req: Request, res: Response, next: NextFunctio
     res.status(201).json({
       success: true,
       data: note
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Add a task to a case
+export const addCaseTask = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Check if case exists
+    const caseItem = await CaseService.getCaseById(req.params.id);
+    
+    if (!caseItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+    
+    // Prepare task data
+    const taskData = {
+      ...req.body,
+      case: req.params.id,
+      assignedBy: (req.user as any)?._id || '',
+    };
+    
+    // Create the task using TaskService
+    const task = await TaskService.createTask(taskData);
+    
+    // Create activity log for adding task
+    await Activity.create({
+      case: req.params.id,
+      action: 'add_task',
+      description: `Added task "${task.title}" to the case`,
+      performedBy: (req.user as any)?._id || '',
+      timestamp: new Date()
+    });
+    
+    // Return the created task with the caseId for frontend reference
+    res.status(201).json({
+      success: true,
+      data: {
+        ...task.toObject(),
+        caseId: req.params.id
+      }
     });
   } catch (error) {
     next(error);
