@@ -76,7 +76,7 @@ router.route('/')
 
 router.route('/:id')
   .get(authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL, UserRole.CLIENT]), getCaseById)
-  .put(authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]), updateCase)
+  .patch(authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]), updateCase)
   .delete(authorize([UserRole.ADMIN, UserRole.LAWYER]), deleteCase);
 
 export default router;

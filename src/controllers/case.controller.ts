@@ -115,7 +115,7 @@ export const updateCase = async (req: Request, res: Response, next: NextFunction
       case: updatedCase._id,
       action: 'update',
       description: `Case ${updatedCase.caseNumber} was updated`,
-      performedBy: (req.user as any)?.id || '',
+      performedBy: (req.user as any)?._id || '',
       timestamp: new Date()
     });
     

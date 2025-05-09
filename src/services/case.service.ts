@@ -87,7 +87,6 @@ export class CaseService {
       caseObject.tasks = tasks;
       caseObject.documents = documents;
       
-      logger.info('Case fetched with related data', { caseId });
       return caseObject;
     } catch (error) {
       logger.error('Error fetching case by ID', { error, caseId });
@@ -119,7 +118,10 @@ export class CaseService {
   }
 
   /**
-   * Update a case
+   * Update a case with partial data
+   * @param caseId - The ID of the case to update
+   * @param updateData - Object containing only the fields that need to be updated
+   * @returns The updated case object or null if case not found
    */
   static async updateCase(caseId: string, updateData: any): Promise<any | null> {
     try {
@@ -127,9 +129,16 @@ export class CaseService {
       const caseItem = await Case.findOne({ _id: caseId, isDeleted: false });
       if (!caseItem) return null;
       
+      // Validate update data
+      if (!updateData || Object.keys(updateData).length === 0) {
+        logger.warn('No update data provided', { caseId });
+        return caseItem; // Return existing case if no updates provided
+      }
+      
       // Don't allow updating caseNumber
       if (updateData.caseNumber) {
         delete updateData.caseNumber;
+        logger.warn('Attempted to update caseNumber which is not allowed', { caseId });
       }
       
       // If status is changing to closed, set closeDate
@@ -137,6 +146,8 @@ export class CaseService {
         updateData.closeDate = new Date();
       }
       
+      // Use findByIdAndUpdate which only updates the fields provided in updateData
+      // This ensures partial updates work correctly
       const updatedCase = await Case.findByIdAndUpdate(
         caseId,
         updateData,
@@ -146,7 +157,6 @@ export class CaseService {
         .populate('assignedAttorneys.attorney', 'firstName lastName email')
         .populate('assignedParalegals', 'firstName lastName email');
       
-      logger.info('Case updated', { caseId });
       return updatedCase;
     } catch (error) {
       logger.error('Error updating case', { error, caseId, updateData });

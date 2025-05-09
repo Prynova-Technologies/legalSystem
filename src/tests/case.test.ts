@@ -138,7 +138,7 @@ describe('Case API Endpoints', () => {
     });
   });
 
-  describe('PUT /api/cases/:id', () => {
+  describe('PATCH /api/cases/:id', () => {
     it('should update case', async () => {
       const caseDoc = await Case.create(mockCaseData);
       
@@ -148,7 +148,7 @@ describe('Case API Endpoints', () => {
       };
       
       const res = await request(app)
-        .put(`/api/cases/${caseDoc._id}`)
+        .patch(`/api/cases/${caseDoc._id}`)
         .send(updateData);
       
       expect(res.status).toBe(httpStatus.OK);
