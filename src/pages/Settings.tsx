@@ -6,8 +6,9 @@ import {
   toggleTwoFactorAuth,
   fetchAuditLogs
 } from '../store/slices/securitySlice';
+import { fetchUsers } from '../store/slices/userSlice';
 import { UserRole } from '../types';
-import { Tabs, Button, StatusBadge, DataTable } from '../components/common';
+import { Tabs, Button, StatusBadge, DataTable, UserModal } from '../components/common';
 import * as FaIcons from 'react-icons/fa';
 import '../components/common/CommonStyles.css';
 
@@ -16,6 +17,9 @@ const Settings: React.FC = () => {
   const { securitySettings, twoFactorEnabled, dataEncryptionEnabled, isLoading, error } = 
     useSelector((state: RootState) => state.security);
   const { user } = useSelector((state: RootState) => state.auth);
+  
+  // Move isAdmin declaration before useEffect
+  const isAdmin = user?.role === UserRole.ADMIN;
   
   const [activeTab, setActiveTab] = useState('security');
   const [passwordPolicy, setPasswordPolicy] = useState({
@@ -32,7 +36,14 @@ const Settings: React.FC = () => {
   useEffect(() => {
     // Instead of fetchSecuritySettings, we'll use the existing security settings from the state
     // If we needed to fetch them, we would create a new thunk in the securitySlice
-  }, [dispatch]);
+    
+    // Fetch users for the user management tab
+    if (isAdmin) {
+      dispatch(fetchUsers() as any);
+      // Fetch audit logs for the audit logs tab
+      dispatch(fetchAuditLogs() as any);
+    }
+  }, [dispatch, isAdmin]);
 
   useEffect(() => {
     if (securitySettings) {
@@ -245,56 +256,138 @@ const Settings: React.FC = () => {
     </div>
   );
 
-  const renderUserManagementTab = () => (
-    <div className="settings-section">
-      <h2>User Management</h2>
-      
-      <div className="settings-card">
-        <h3>User Roles & Permissions</h3>
-        <DataTable
-          columns={[
-            { header: 'Role', accessor: 'role' },
-            { header: 'Description', accessor: 'description' },
-            { header: 'Access Level', accessor: 'accessLevel' }
-          ]}
-          data={[
-            {
-              role: 'Administrator',
-              description: 'Full system access with ability to manage users and settings',
-              accessLevel: 'Full Access'
-            },
-            {
-              role: 'Lawyer',
-              description: 'Can manage cases, clients, documents, and billing',
-              accessLevel: 'High Access'
-            },
-            {
-              role: 'Paralegal',
-              description: 'Can view cases and clients, manage documents',
-              accessLevel: 'Medium Access'
-            },
-            {
-              role: 'Assistant',
-              description: 'Limited access to cases and documents',
-              accessLevel: 'Low Access'
-            },
-            {
-              role: 'Client',
-              description: 'Can only view their own cases and documents',
-              accessLevel: 'Restricted Access'
-            }
-          ]}
-          striped={true}
-          bordered={true}
-        />
+  // State for user management tab
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const { users } = useSelector((state: RootState) => state.users);
+  
+  // State for audit logs tab
+  const { auditLogs } = useSelector((state: RootState) => state.security);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [userFilter, setUserFilter] = useState('');
+  const [actionFilter, setActionFilter] = useState('');
+  
+  const handleOpenUserModal = () => {
+    setIsUserModalOpen(true);
+  };
+  
+  const handleCloseUserModal = () => {
+    setIsUserModalOpen(false);
+  };
+
+  const handleFilterAuditLogs = () => {
+    dispatch(fetchAuditLogs({
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      userId: userFilter || undefined,
+      action: actionFilter || undefined
+    }) as any);
+  };
+
+  const handleClearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setUserFilter('');
+    setActionFilter('');
+    dispatch(fetchAuditLogs({}) as any);
+  };
+
+  const renderUserManagementTab = () => {
+    return (
+      <div className="settings-section">
+        <h2>User Management</h2>
         
-        <div className="action-buttons">
-          <Button variant="primary">Manage Users</Button>
-          <Button variant="secondary">Edit Permissions</Button>
+        <div className="settings-card">
+          <div className="settings-card-header">
+            <h3>User Roles & Permissions</h3>
+            <Button 
+              variant="primary" 
+              onClick={handleOpenUserModal}
+              startIcon={<FaIcons.FaUserPlus />}
+            >
+              Add New User
+            </Button>
+          </div>
+          
+          <DataTable
+            columns={[
+              { header: 'Role', accessor: 'role' },
+              { header: 'Description', accessor: 'description' },
+              { header: 'Access Level', accessor: 'accessLevel' }
+            ]}
+            data={[
+              {
+                role: 'Administrator',
+                description: 'Full system access with ability to manage users and settings',
+                accessLevel: 'Full Access'
+              },
+              {
+                role: 'Lawyer',
+                description: 'Can manage cases, clients, documents, and billing',
+                accessLevel: 'High Access'
+              },
+              {
+                role: 'Paralegal',
+                description: 'Can view cases and clients, manage documents',
+                accessLevel: 'Medium Access'
+              },
+              {
+                role: 'Assistant',
+                description: 'Limited access to cases and documents',
+                accessLevel: 'Low Access'
+              },
+              {
+                role: 'Client',
+                description: 'Can only view their own cases and documents',
+                accessLevel: 'Restricted Access'
+              }
+            ]}
+            striped={true}
+            bordered={true}
+          />
+          
+          <div className="action-buttons">
+            <Button variant="primary">Manage Users</Button>
+            <Button variant="secondary">Edit Permissions</Button>
+          </div>
         </div>
+        
+        {/* User list section */}
+        <div className="settings-card">
+          <h3>System Users</h3>
+          <DataTable
+            columns={[
+              { header: 'Name', accessor: (row) => `${row.firstName} ${row.lastName}` },
+              { header: 'Email', accessor: 'email' },
+              { header: 'Role', accessor: 'role' },
+              { 
+                header: 'Status', 
+                accessor: (row) => (
+                  <StatusBadge status={row.isActive ? 'active' : 'inactive'} />
+                )
+              },
+              { 
+                header: 'Actions', 
+                accessor: (row) => (
+                  <div className="table-actions">
+                    <Button variant="secondary" size="small">Edit</Button>
+                    <Button variant="danger" size="small">Deactivate</Button>
+                  </div>
+                )
+              }
+            ]}
+            data={users || []}
+            emptyMessage="No users found"
+            striped={true}
+            bordered={true}
+          />
+        </div>
+        
+        {/* User Modal */}
+        <UserModal isOpen={isUserModalOpen} onClose={handleCloseUserModal} />
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderSystemTab = () => (
     <div className="settings-section">
@@ -452,44 +545,110 @@ const Settings: React.FC = () => {
     </div>
   );
 
-  // Only show certain tabs based on user role
-  const isAdmin = user?.role === UserRole.ADMIN;
-
-  return (
-    <div className="settings-container">
-      <div className="page-header">
-        <h1>Settings</h1>
-      </div>
+  // Remove duplicate isAdmin declaration
+  const renderAuditLogsTab = () => (
+    <div className="settings-section">
+      <h2>Audit Logs</h2>
       
-      {isLoading ? (
-        <div className="loading-indicator">Loading settings...</div>
-      ) : error ? (
-        <div className="error-message">{error}</div>
-      ) : (
-        <div className="settings-layout">
-          <div className="settings-tabs-container">
-            <Tabs
-              tabs={[
-                { id: 'security', label: 'Security', icon: <FaIcons.FaShieldAlt /> },
-                ...(isAdmin ? [{ id: 'user-management', label: 'User Management', icon: <FaIcons.FaUsers /> }] : []),
-                ...(isAdmin ? [{ id: 'system', label: 'System', icon: <FaIcons.FaCogs /> }] : []),
-                { id: 'preferences', label: 'Preferences', icon: <FaIcons.FaUserCog /> }
-              ]}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              variant="default"
-            />
-          </div>
-          <div className="settings-content">
-            <div className="tab-content">
-              {activeTab === 'security' && renderSecurityTab()}
-              {activeTab === 'user-management' && isAdmin && renderUserManagementTab()}
-              {activeTab === 'system' && isAdmin && renderSystemTab()}
-              {activeTab === 'preferences' && renderPreferencesTab()}
+      <div className="settings-card">
+        <h3>Filter Audit Logs</h3>
+        <div className="settings-form">
+          <div className="form-group">
+            <label>Date Range</label>
+            <div className="date-range-inputs">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="Start Date"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="End Date"
+              />
             </div>
           </div>
+          
+          <div className="form-group">
+            <label>User</label>
+            <input
+              type="text"
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              placeholder="Filter by user"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label>Action</label>
+            <input
+              type="text"
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+              placeholder="Filter by action type"
+            />
+          </div>
+          
+          <div className="action-buttons">
+            <Button variant="primary" onClick={handleFilterAuditLogs}>
+              Apply Filters
+            </Button>
+            <Button variant="secondary" onClick={handleClearFilters}>
+              Clear Filters
+            </Button>
+          </div>
         </div>
-      )}
+      </div>
+      
+      <div className="settings-card">
+        <h3>Audit Log Entries</h3>
+        <DataTable
+          columns={[
+            { header: 'Timestamp', accessor: row => formatDate(row.timestamp) },
+            { header: 'User', accessor: 'username' },
+            { header: 'Action', accessor: 'action' },
+            { header: 'Details', accessor: 'details' },
+            { 
+              header: 'Status', 
+              accessor: row => (
+                <StatusBadge status={row.status} />
+              )
+            }
+          ]}
+          data={auditLogs || []}
+          emptyMessage="No audit logs found"
+          striped={true}
+          bordered={true}
+          pagination={true}
+          pageSize={10}
+        />
+      </div>
+    </div>
+  );
+
+  // Only show certain tabs based on user role
+  // Remove duplicate isAdmin declaration
+  return (
+    <div className="settings-container">
+      <Tabs
+        tabs={[
+          { id: 'security', label: 'Security' },
+          { id: 'user-management', label: 'User Management' },
+          { id: 'system', label: 'System' },
+          { id: 'preferences', label: 'Preferences' },
+          { id: 'audit-logs', label: 'Audit Logs' }
+        ]}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
+      
+      {activeTab === 'security' && renderSecurityTab()}
+      {activeTab === 'user-management' && renderUserManagementTab()}
+      {activeTab === 'system' && renderSystemTab()}
+      {activeTab === 'preferences' && renderPreferencesTab()}
+      {activeTab === 'audit-logs' && renderAuditLogsTab()}
     </div>
   );
 };
