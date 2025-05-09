@@ -85,7 +85,7 @@ const authService = {
   logout: async () => {
     try {
       // await api.post('/auth/logout');
-      localStorage.removeItem('token');
+     localStorage.removeItem('token');
     } catch (error) {
       console.error('Logout error:', error);
       // Still remove token even if API call fails

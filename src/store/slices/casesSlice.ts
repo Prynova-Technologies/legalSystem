@@ -149,9 +149,28 @@ export const addCaseNoteAsync = createAsyncThunk(
       }
       
       const result = await caseService.addCaseNote(token, caseId, note);
-      return { caseId, note };
+      return result;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to add case note');
+    }
+  }
+);
+
+export const addCaseTaskAsync = createAsyncThunk(
+  'cases/addCaseTaskAsync',
+  async ({ caseId, taskData }: { caseId: string; taskData: any }, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as RootState;
+      const token = state.auth.token;
+      
+      if (!token) {
+        return rejectWithValue('Authentication token not found');
+      }
+      
+      const result = await caseService.addCaseTask(token, caseId, taskData);
+      return result;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to add case task');
     }
   }
 );
@@ -294,6 +313,23 @@ const casesSlice = createSlice({
         }
       })
       .addCase(addCaseNoteAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Add task to case
+      .addCase(addCaseTaskAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(addCaseTaskAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // If we have the current case loaded and it matches the case we added a task to
+        if (state.currentCase && state.currentCase.id === action.payload.caseId) {
+          // Add the new task to the current case's tasks array
+          state.currentCase.tasks = [...state.currentCase.tasks, action.payload];
+        }
+      })
+      .addCase(addCaseTaskAsync.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

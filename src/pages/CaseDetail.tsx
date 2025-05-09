@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { fetchCaseById, updateCase, addCaseNote } from '../store/slices/casesSlice';
+import { fetchCaseById, updateCase, addCaseNote, addCaseNoteAsync } from '../store/slices/casesSlice';
 import { fetchTasks } from '../store/slices/tasksSlice';
 import { fetchDocuments } from '../store/slices/documentsSlice';
 import { CaseStatus, CaseType, Note } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import '../styles/caseDetail.css';
 import { DocumentUploadModal, DocumentCard } from '../components/documents';
+import { AddTaskModal, TaskCard } from '../components/tasks';
 import { FaIcons } from 'react-icons/fa';
 
 const CaseDetail: React.FC = () => {
@@ -20,7 +21,7 @@ const CaseDetail: React.FC = () => {
   const { tasks } = useSelector((state: RootState) => state.tasks);
   const { documents } = useSelector((state: RootState) => state.documents);
 
-  console.log(currentCase)
+  // console.log(currentCase)
   
   const [activeTab, setActiveTab] = useState('overview');
   const [noteContent, setNoteContent] = useState('');
@@ -32,6 +33,7 @@ const CaseDetail: React.FC = () => {
     caseType: '' as CaseType
   });
   const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false)
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -44,6 +46,11 @@ const CaseDetail: React.FC = () => {
   const _handleRefreshData = async () => {
     dispatch(fetchCaseById(id) as any);
   }
+
+  const handleTaskAdded = () => {
+    // Refresh case data to show the newly added task
+    _handleRefreshData();
+  };
 
   useEffect(() => {
     if (currentCase) {
@@ -93,18 +100,9 @@ const CaseDetail: React.FC = () => {
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (id && noteContent.trim()) {
-      const now = new Date().toISOString();
-      const newNote: Note = {
-        id: uuidv4(),
-        content: noteContent,
-        caseId: id,
-        createdBy: '1', // Current user ID would be used here
-        createdAt: now,
-        updatedAt: now
-      };
 
       try {
-        await dispatch(addCaseNote({ caseId: id, note: newNote }) as any);
+        await dispatch(addCaseNoteAsync({ caseId: id, note: noteContent }) as any);
         setNoteContent('');
         // Refresh case data to show the newly added note
         await _handleRefreshData();
@@ -445,26 +443,30 @@ const CaseDetail: React.FC = () => {
             {activeTab === 'tasks' && (
               <div className="tasks-tab">
                 <div className="tab-header-actions">
-                  <button className="btn btn-primary" onClick={() => navigate(`/tasks/new?caseId=${id}`)}>Add Task</button>
+                  <button className="btn btn-primary" onClick={() => setIsAddTaskModalOpen(true)}>Add Task</button>
                 </div>
+                
+                {/* Add Task Modal */}
+                <AddTaskModal
+                  isOpen={isAddTaskModalOpen}
+                  onClose={() => setIsAddTaskModalOpen(false)}
+                  caseId={id || ''}
+                  onTaskAdded={handleTaskAdded}
+                />
                 
                 {caseTasks.length > 0 ? (
                   <div className="tasks-list">
                     {caseTasks.map(task => (
-                      <div key={task.id} className={`task-item priority-${task.priority}`}>
-                        <div className="task-header">
-                          <h4 className="task-title">{task.title}</h4>
-                          <span className={`task-status status-${task.status.replace('_', '-')}`}>
-                            {task.status.replace('_', ' ')}
-                          </span>
-                        </div>
-                        <p className="task-description">{task.description}</p>
-                        <div className="task-meta">
-                          <span className="task-due-date">Due: {formatDate(task.dueDate)}</span>
-                          <span className="task-priority">Priority: {task.priority}</span>
-                        </div>
-                        <button className="btn btn-sm" onClick={() => navigate(`/tasks/${task.id}`)}>View Details</button>
-                      </div>
+                      <TaskCard
+                        key={task.id}
+                        id={task.id}
+                        title={task.title}
+                        description={task.description}
+                        status={task.status}
+                        priority={task.priority}
+                        dueDate={task.dueDate}
+                        assignedTo={task.assignedTo || []}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -518,7 +520,7 @@ const CaseDetail: React.FC = () => {
                       rows={4}
                       required
                     />
-                    <button type="submit" className="btn btn-primary">Add Note</button>
+                    <button type="submit" disabled={isLoading ? true : false} className="btn btn-primary">{isLoading ? 'submiting...' : 'Add Note'}</button>
                   </form>
                 </div>
                 

@@ -238,7 +238,36 @@ export const caseService = {
       console.error(`Error adding note to case ${caseId}:`, error);
       throw error;
     }
-  }
+  },
+
+    /**
+   * Add a task to a case
+   * @param token User authentication token
+   * @param caseId Case ID
+   * @param taskData Task data to create
+   */
+    addCaseTask: async (token: string, caseId: string, taskData: any) => {
+      try {
+        const response = await fetch(API_ENDPOINTS.CASES.TASKS(caseId), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(taskData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to add task to case: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data.data;
+      } catch (error) {
+        console.error(`Error adding task to case ${caseId}:`, error);
+        throw error;
+      }
+    }
 };
 
 export default caseService;

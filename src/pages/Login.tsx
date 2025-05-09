@@ -62,7 +62,7 @@ const Login: React.FC = () => {
   // Check if user is already authenticated
   useEffect(() => {
     if (authService.isAuthenticated()) {
-      navigate('/');
+      // navigate('/');
     }
   }, [navigate]);
 

@@ -27,6 +27,8 @@ const API_ENDPOINTS = {
   CASES: {
     BASE: `${API_BASE_URL}/cases`,
     DETAIL: (id: string) => `${API_BASE_URL}/cases/${id}`,
+    TASKS: (id: string) => `${API_BASE_URL}/cases/${id}/tasks`,
+    NOTES: (id: string) => `${API_BASE_URL}/cases/${id}/notes`,
   },
   
   // Clients endpoints
