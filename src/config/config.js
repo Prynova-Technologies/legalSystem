@@ -11,7 +11,7 @@ var config = {
     env: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT || '9000', 10),
     mongoose: {
-        url: process.env.MONGODB_URI || 'mongodb://localhost:27017/law-firm-management',
+        url: process.env.MONGODB_URI,
         options: {
             useNewUrlParser: true,
             useUnifiedTopology: true,
