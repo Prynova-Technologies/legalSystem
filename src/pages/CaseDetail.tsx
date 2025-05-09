@@ -145,8 +145,6 @@ const CaseDetail: React.FC = () => {
    return found.value;
   }
 
-  console.log(currentCase)
-
   return (
     <div className="case-detail-container">
       <div className="case-header">
@@ -456,9 +454,9 @@ const CaseDetail: React.FC = () => {
                   onTaskAdded={handleTaskAdded}
                 />
                 
-                {caseTasks.length > 0 ? (
+                {caseTasks?.length > 0 ? (
                   <div className="tasks-list">
-                    {caseTasks.map(task => (
+                    {caseTasks?.map(task => (
                       <TaskCard
                         key={task.id}
                         id={task.id}

@@ -261,7 +261,7 @@ const ClientDetail: React.FC = () => {
   }
 
   // Filter client-related cases and documents
-  const clientCases = cases?.filter(c => c.clientId === id);
+  const clientCases = cases?.filter(c => c.client === id);
   const clientDocuments = documents.data?.filter(doc => doc.client?._id === id);
 
   const getClientName = () => {
@@ -583,7 +583,7 @@ const ClientDetail: React.FC = () => {
                   actions={
                     <Button 
                       variant="primary" 
-                      onClick={() => navigate(`/cases/new?clientId=${id}`)}
+                      onClick={() => navigate(`/cases/new-case`)}
                     >
                       <FaIcons.FaPlus /> Create New Case
                     </Button>
@@ -593,7 +593,7 @@ const ClientDetail: React.FC = () => {
                     columns={[
                       { header: 'Case Number', accessor: 'caseNumber' },
                       { header: 'Title', accessor: 'title' },
-                      { header: 'Type', accessor: row => row.caseType.replace('_', ' ') },
+                      { header: 'Type', accessor: row => row.type.replace('_', ' ') },
                       { 
                         header: 'Status', 
                         accessor: row => (
@@ -616,7 +616,7 @@ const ClientDetail: React.FC = () => {
                     ]}
                     data={clientCases}
                     emptyMessage="No cases associated with this client"
-                    onRowClick={row => navigate(`/cases/${row.id}`)}
+                    onRowClick={row => navigate(`/cases/${row._id}`)}
                     pagination={true}
                     pageSize={5}
                   />
