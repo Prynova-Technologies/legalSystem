@@ -7,6 +7,7 @@ import DetailView, { DetailItem, DetailSection } from './DetailView';
 import DataTable from './DataTable';
 import StatusBadge from './StatusBadge';
 import Modal from './Modal';
+import UserModal from './UserModal';
 import CalendarModal from './CalendarModal';
 import DashboardCharts from './Charts';
 import DataForm, { FormField, FormSection } from './Form';
@@ -18,6 +19,7 @@ export {
   Tabs,
   DatePicker,
   DetailView,
+  UserModal,
   DetailItem,
   DetailSection,
   DataTable,
