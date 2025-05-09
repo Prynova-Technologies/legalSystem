@@ -50,6 +50,9 @@ const taskSchema = new Schema(
       enum: Object.values(TaskStatus),
       default: TaskStatus.TODO,
     },
+    startDate: {
+      type: Date,
+    },
     dueDate: {
       type: Date,
       required: [true, 'Due date is required'],

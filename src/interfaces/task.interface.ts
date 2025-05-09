@@ -31,6 +31,7 @@ export interface ITask {
   assignedBy: string | IUserDocument;
   priority: TaskPriority;
   status: TaskStatus;
+  startDate?: Date;
   dueDate: Date;
   completedDate?: Date;
   estimatedHours?: number;
