@@ -36,7 +36,7 @@ export class UserService {
   static async getUserByEmail(email: string): Promise<IUserDocument | null> {
     try {
       // Explicitly include password field for authentication purposes
-      return await User.findOne({ email });
+      return await User.findByEmail(email);
     } catch (error) {
       logger.error('Error fetching user by email', { error, email });
       throw error;
