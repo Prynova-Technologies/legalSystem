@@ -1,6 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Task } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
+import { 
+  fetchAllTasks, 
+  fetchTaskById as fetchTaskByIdApi, 
+  createTask as createTaskApi, 
+  deleteTask as deleteTaskApi,
+  updateTask as updateTaskApi 
+} from '../../services/taskService';
 
 interface TasksState {
   tasks: Task[];
@@ -32,47 +39,11 @@ const initialState: TasksState = {
   },
 };
 
-// Mock API calls - would be replaced with actual API calls
-export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async (_, { rejectWithValue }) => {
+export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async (filters: any = {}, { rejectWithValue }) => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock data
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    
-    const mockTasks: Task[] = [
-      {
-        id: '1',
-        title: 'Prepare initial complaint',
-        description: 'Draft the initial complaint for Smith vs. Johnson case',
-        caseId: '1',
-        assignedTo: '2',
-        dueDate: tomorrow.toISOString(),
-        priority: 'high',
-        status: 'in_progress',
-        createdAt: today.toISOString(),
-        updatedAt: today.toISOString(),
-      },
-      {
-        id: '2',
-        title: 'Client intake meeting',
-        description: 'Conduct initial client intake meeting with Acme Corporation',
-        assignedTo: '1',
-        dueDate: nextWeek.toISOString(),
-        priority: 'medium',
-        status: 'not_started',
-        createdAt: today.toISOString(),
-        updatedAt: today.toISOString(),
-      },
-    ];
-    
-    return mockTasks;
+    // Use the task service to make the actual API call
+    const tasks = await fetchAllTasks(filters);
+    return tasks;
   } catch (error) {
     return rejectWithValue('Failed to fetch tasks');
   }
@@ -80,21 +51,11 @@ export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async (_, { rejec
 
 export const fetchTaskById = createAsyncThunk(
   'tasks/fetchTaskById',
-  async (taskId: string, { rejectWithValue, getState }) => {
+  async (taskId: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // In a real app, we would make an API call here
-      // For now, we'll just find the task in our state
-      const state = getState() as { tasks: TasksState };
-      const foundTask = state.tasks.tasks.find(t => t.id === taskId);
-      
-      if (!foundTask) {
-        return rejectWithValue('Task not found');
-      }
-      
-      return foundTask;
+      // Use the task service to make the actual API call
+      const task = await fetchTaskByIdApi(taskId);
+      return task;
     } catch (error) {
       return rejectWithValue('Failed to fetch task details');
     }
@@ -105,23 +66,8 @@ export const createTask = createAsyncThunk(
   'tasks/createTask',
   async (taskData: Partial<Task>, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const now = new Date().toISOString();
-      const newTask: Task = {
-        id: uuidv4(),
-        title: taskData.title || 'New Task',
-        description: taskData.description || '',
-        caseId: taskData.caseId,
-        assignedTo: taskData.assignedTo || '',
-        dueDate: taskData.dueDate || now,
-        priority: taskData.priority || 'medium',
-        status: 'not_started',
-        createdAt: now,
-        updatedAt: now,
-      };
-      
+      // Use the task service to make the actual API call
+      const newTask = await createTaskApi(taskData);
       return newTask;
     } catch (error) {
       return rejectWithValue('Failed to create task');
@@ -129,29 +75,14 @@ export const createTask = createAsyncThunk(
   }
 );
 
+
+
 export const updateTask = createAsyncThunk(
   'tasks/updateTask',
-  async ({ taskId, taskData }: { taskId: string; taskData: Partial<Task> }, { rejectWithValue, getState }) => {
+  async ({ taskId, taskData }: { taskId: string; taskData: Partial<Task> }, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const state = getState() as { tasks: TasksState };
-      const existingTask = state.tasks.tasks.find(t => t.id === taskId);
-      
-      if (!existingTask) {
-        return rejectWithValue('Task not found');
-      }
-      
-      const now = new Date().toISOString();
-      const updatedTask: Task = {
-        ...existingTask,
-        ...taskData,
-        updatedAt: now,
-        // If status is being changed to completed, set completedAt
-        completedAt: taskData.status === 'completed' ? now : existingTask.completedAt,
-      };
-      
+      // Use the task service to make the actual API call
+      const updatedTask = await updateTaskApi(taskId, taskData);
       return updatedTask;
     } catch (error) {
       return rejectWithValue('Failed to update task');
@@ -163,9 +94,8 @@ export const deleteTask = createAsyncThunk(
   'tasks/deleteTask',
   async (taskId: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Use the task service to make the actual API call
+      await deleteTaskApi(taskId);
       return taskId;
     } catch (error) {
       return rejectWithValue('Failed to delete task');

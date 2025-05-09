@@ -21,6 +21,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
     description: '',
     assignedTo: [] as string[],
     priority: 'medium',
+    startDate: '',
     dueDate: '',
     estimatedHours: '',
     billable: true,
@@ -42,6 +43,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
       description: '',
       assignedTo: [] as string[],
       priority: 'medium',
+      startDate: '',
       dueDate: '',
       estimatedHours: '',
       billable: true,
@@ -106,6 +108,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
         assignedTo: formData.assignedTo,
         assignedBy: user?.data?._id || '',
         priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
         dueDate: new Date(formData.dueDate).toISOString(),
         estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : undefined,
         billable: formData.billable,
@@ -216,6 +219,17 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
             <option value="high">High</option>
             <option value="urgent">Urgent</option>
           </select>
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="startDate">Start Date</label>
+          <input
+            type="date"
+            id="startDate"
+            name="startDate"
+            value={formData.startDate}
+            onChange={handleChange}
+          />
         </div>
         
         <div className="form-group">

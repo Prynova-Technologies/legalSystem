@@ -464,8 +464,12 @@ const CaseDetail: React.FC = () => {
                         description={task.description}
                         status={task.status}
                         priority={task.priority}
+                        startDate={task.startDate}
                         dueDate={task.dueDate}
                         assignedTo={task.assignedTo || []}
+                        assignedBy={task.assignedBy}
+                        loading={isLoading}
+                        onStatusChange={_handleRefreshData}
                       />
                     ))}
                   </div>
