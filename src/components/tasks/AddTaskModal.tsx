@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Modal } from '../common';
 import { addCaseTaskAsync } from '../../store/slices/casesSlice';
+import FormStyles from '../forms/FormStyles.css'
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -257,7 +258,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
           />
         </div>
         
-        <div className="form-group checkbox-group">
+        <div style={{display: 'flex', flexDirection: 'row', marginBottom: 10, fontWeight: 500, color: '#4a5568', fontSize: '0.9rem'}}>
           <input
             type="checkbox"
             id="billable"

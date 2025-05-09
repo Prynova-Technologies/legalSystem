@@ -110,7 +110,7 @@ export const caseService = {
   updateCase: async (token: string, caseId: string, caseData: Partial<Case>) => {
     try {
       const response = await fetch(API_ENDPOINTS.CASES.DETAIL(caseId), {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -219,7 +219,7 @@ export const caseService = {
    */
   addCaseNote: async (token: string, caseId: string, note: any) => {
     try {
-      const response = await fetch(`${API_ENDPOINTS.CASES.DETAIL(caseId)}/notes`, {
+      const response = await fetch(`${API_ENDPOINTS.CASES.NOTES(caseId)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
