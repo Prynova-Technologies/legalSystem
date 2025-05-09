@@ -58,7 +58,7 @@ const CaseDetail: React.FC = () => {
         title: currentCase.title,
         description: currentCase.description,
         status: currentCase.status,
-        caseType: currentCase.caseType
+        caseType: currentCase.type
       });
     }
   }, [currentCase]);
@@ -144,6 +144,8 @@ const CaseDetail: React.FC = () => {
 
    return found.value;
   }
+
+  console.log(currentCase)
 
   return (
     <div className="case-detail-container">
@@ -255,7 +257,7 @@ const CaseDetail: React.FC = () => {
               className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`}
               onClick={() => handleTabChange('tasks')}
             >
-              Tasks ({caseTasks.length})
+              Tasks ({caseTasks?.length})
             </button>
             <button
               className={`tab-button ${activeTab === 'documents' ? 'active' : ''}`}
