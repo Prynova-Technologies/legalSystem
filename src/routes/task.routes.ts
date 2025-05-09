@@ -54,7 +54,7 @@ router
 router
   .route('/:id')
   .get(getTaskById)
-  .put(updateTask)
+  .patch(updateTask)
   .delete(deleteTask);
 
 export default router;

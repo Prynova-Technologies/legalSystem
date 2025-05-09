@@ -164,7 +164,7 @@ describe('Task API Endpoints', () => {
     });
   });
 
-  describe('PUT /api/tasks/:id', () => {
+  describe('PATCH /api/tasks/:id', () => {
     it('should update task', async () => {
       const task = await Task.create(mockTask);
       
@@ -174,7 +174,7 @@ describe('Task API Endpoints', () => {
       };
       
       const res = await request(app)
-        .put(`/api/tasks/${task._id}`)
+        .patch(`/api/tasks/${task._id}`)
         .send(updateData);
       
       expect(res.status).toBe(httpStatus.OK);
