@@ -20,8 +20,6 @@ const CaseDetail: React.FC = () => {
   const { currentCase, isLoading, error } = useSelector((state: RootState) => state.cases);
   const { tasks } = useSelector((state: RootState) => state.tasks);
   const { documents } = useSelector((state: RootState) => state.documents);
-
-  // console.log(currentCase)
   
   const [activeTab, setActiveTab] = useState('overview');
   const [noteContent, setNoteContent] = useState('');

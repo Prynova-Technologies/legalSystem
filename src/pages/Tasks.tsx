@@ -4,7 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchTasks, setFilters, clearFilters, updateTask } from '../store/slices/tasksSlice';
 import { CalendarModal } from '../components/common';
+import { TaskCard } from '../components/tasks';
 import * as FaIcons from 'react-icons/fa';
+import './Tasks.css';
 
 const Tasks: React.FC = () => {
   const dispatch = useDispatch();
@@ -31,15 +33,9 @@ const Tasks: React.FC = () => {
     setSearchInput('');
   };
 
-  const handleMarkComplete = async (taskId: string) => {
-    try {
-      await dispatch(updateTask({
-        taskId,
-        taskData: { status: 'completed' }
-      }) as any);
-    } catch (error) {
-      console.error('Failed to mark task as complete:', error);
-    }
+  const handleTaskStatusChange = async () => {
+    // Refresh tasks after status change
+    dispatch(fetchTasks() as any);
   };
 
   // Filter tasks based on current filters
@@ -143,7 +139,9 @@ const Tasks: React.FC = () => {
       default:
         return '';
     }
-  };
+  }
+
+  console.log(filteredTasks)
 
   return (
     <div className="tasks-container">
@@ -239,51 +237,32 @@ const Tasks: React.FC = () => {
       ) : (
         <div className="tasks-list">
           {filteredTasks.map(task => (
-            <div key={task.id} className={`task-card ${getPriorityClass(task.priority)}`}>
-              <div className="task-header">
-                <h3 className="task-title">{task.title}</h3>
-                <span className={`task-status ${getStatusClass(task.status)}`}>
-                  {task.status.replace('_', ' ')}
-                </span>
-              </div>
+            <div key={task._id} className="task-card-wrapper">
+              <TaskCard
+                id={task._id}
+                title={task.title}
+                description={task.description}
+                status={task.status}
+                priority={task.priority}
+                dueDate={task.dueDate}
+                assignedTo={task.assignedTo}
+                assignedBy={task.assignedBy}
+                startDate={task.startDate}
+                onStatusChange={handleTaskStatusChange}
+                loading={isLoading}
+              />
               
-              <div className="task-description">{task.description}</div>
-              
-              <div className="task-meta">
-                <div className="task-meta-item">
-                  <span className="meta-label">Due:</span>
-                  <span className="meta-value">{formatDate(task.dueDate)}</span>
-                </div>
-                
-                <div className="task-meta-item">
-                  <span className="meta-label">Priority:</span>
-                  <span className={`meta-value ${getPriorityClass(task.priority)}`}>{task.priority}</span>
-                </div>
-                
-                {task.caseId && (
-                  <div className="task-meta-item">
-                    <span className="meta-label">Case:</span>
-                    <Link to={`/cases/${task.caseId}`} className="meta-value case-link">View Case</Link>
-                  </div>
-                )}
-              </div>
-              
-              <div className="task-actions">
-                {task.status !== 'completed' && (
-                  <button 
-                    className="btn btn-success btn-sm"
-                    onClick={() => handleMarkComplete(task.id)}
+              {task.case && (
+                <div className="case-link-container">
+                  <Link 
+                    to={`/cases/${task.case?._id}`} 
+                    className="case-link"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    Mark Complete
-                  </button>
-                )}
-                <button 
-                  className="btn btn-primary btn-sm"
-                  onClick={() => navigate(`/tasks/${task.id}`)}
-                >
-                  View Details
-                </button>
-              </div>
+                    View Related Case
+                  </Link>
+                </div>
+              )}
             </div>
           ))}
         </div>
