@@ -101,17 +101,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     try {
       setIsSubmitting(true);
       
-      // Ensure dates are not null before submitting
-      const processedFormData = {
-        ...formData,
-        issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
-        dueDate: formData.dueDate || new Date().toISOString().split('T')[0]
-      };
-      
       if (invoice) {
-        await dispatch(updateInvoice({ id: invoice.id, ...processedFormData }) as any);
+        await dispatch(updateInvoice({ id: invoice.id, ...formData }) as any);
       } else {
-        await dispatch(createInvoice(processedFormData) as any);
+        await dispatch(createInvoice(formData) as any);
       }
 
       onSuccess?.();
