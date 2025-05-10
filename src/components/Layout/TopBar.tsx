@@ -43,7 +43,7 @@ const TopBar: React.FC = () => {
           <FaIcons.FaUserCircle className="user-avatar" />
           <div className="user-details">
             <span className="user-name">{user ? `${user.data?.firstName} ${user.data?.lastName}` : 'User'}</span>
-            <span className="user-role">{user.data?.role || 'Role'}</span>
+            <span className="user-role">{user?.data?.role || 'Role'}</span>
           </div>
         </div>
 
