@@ -392,32 +392,106 @@ const Settings: React.FC = () => {
   const renderSystemTab = () => (
     <div className="settings-section">
       <h2>System Settings</h2>
+      <style>
+        {`
+          .system-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+          }
+          
+          .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+          }
+          
+          .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+          }
+          
+          .metric-icon {
+            background: #f0f4ff;
+            padding: 1rem;
+            border-radius: 10px;
+            color: #4a5568;
+          }
+          
+          .metric-icon svg {
+            width: 24px;
+            height: 24px;
+          }
+          
+          .metric-content {
+            flex: 1;
+          }
+          
+          .metric-content h4 {
+            color: #4a5568;
+            margin: 0 0 0.5rem 0;
+            font-size: 0.875rem;
+          }
+          
+          .metric-value {
+            color: #2d3748;
+            font-size: 1.25rem;
+            font-weight: 600;
+          }
+        `}
+      </style>
       
-      <div className="settings-card">
-        <h3>System Information</h3>
-        <div className="info-grid">
-          <div className="info-item">
-            <span className="info-label">System Version</span>
-            <span className="info-value">1.0.0</span>
+      <div className="system-metrics-grid">
+        <div className="metric-card">
+          <div className="metric-icon">
+            <FaIcons.FaCode />
           </div>
-          <div className="info-item">
-            <span className="info-label">Last Backup</span>
-            <span className="info-value">Never</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Database Size</span>
-            <span className="info-value">0 MB</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Storage Usage</span>
-            <span className="info-value">0 MB / 1 GB</span>
+          <div className="metric-content">
+            <h4>System Version</h4>
+            <div className="metric-value">1.0.0</div>
           </div>
         </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">
+            <FaIcons.FaDatabase />
+          </div>
+          <div className="metric-content">
+            <h4>Last Backup</h4>
+            <div className="metric-value">Never</div>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">
+            <FaIcons.FaHdd />
+          </div>
+          <div className="metric-content">
+            <h4>Database Size</h4>
+            <div className="metric-value">0 MB</div>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">
+            <FaIcons.FaServer />
+          </div>
+          <div className="metric-content">
+            <h4>Storage Usage</h4>
+            <div className="metric-value">0 MB / 1 GB</div>
+          </div>
+        </div>
+      </div>
         
-        <div className="action-buttons">
-          <Button variant="primary">Backup System</Button>
-          <Button variant="secondary">System Logs</Button>
-        </div>
+      <div className="action-buttons">
+        <Button variant="primary">Backup System</Button>
+        <Button variant="secondary">System Logs</Button>
       </div>
       
       <div className="settings-card">
