@@ -20,6 +20,8 @@ export interface IDocumentVersion {
   version: number;
   fileName: string;
   filePath: string;
+  fileType?: string;
+  fileSize?: number;
   uploadedBy: string | IUserDocument;
   uploadedAt: Date;
   notes?: string;

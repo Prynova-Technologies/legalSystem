@@ -49,6 +49,11 @@ export interface IClientDocument extends IClient, Document {
   fullName: string;
   createdAt: Date;
   updatedAt: Date;
+
+   // Related collections that can be attached to a case object
+ cases?: Array<import('./case.interface').ICaseDocument>;
+ tasks?: Array<import('./task.interface').ITaskDocument>;
+ documents?: Array<import('./document.interface').IDocumentDocument>;
 }
 
 export interface IClientModel extends Model<IClientDocument> {

@@ -1,11 +1,32 @@
 import Document from '../models/document.model';
-import { DocumentType } from '../interfaces/document.interface';
+import Activity from '../models/activity.model';
 import logger from '../utils/logger';
 
 /**
  * Service for document-related operations
  */
 export class DocumentService {
+  /**
+   * Helper method to create an activity record for document actions
+   * @private
+   */
+  private static async createDocumentActivity(document: any, action: string, description: string, userId: string): Promise<void> {
+    try {
+      // Only create activity if document has a case reference
+      if (document && document.case) {
+        await Activity.create({
+          case: document.case,
+          action,
+          description,
+          performedBy: userId,
+          timestamp: new Date()
+        });
+      }
+    } catch (error) {
+      logger.error('Error creating document activity', { error, documentId: document?._id, action });
+      // Don't throw the error to prevent disrupting the main operation
+    }
+  }
   /**
    * Get all documents with filtering options
    */
@@ -42,7 +63,7 @@ export class DocumentService {
       }
       
       return await Document.find(filter)
-        .populate('uploadedBy', 'firstName lastName')
+        .populate('createdBy', 'firstName lastName')
         .populate('case', 'caseNumber title')
         .populate('client', 'firstName lastName company')
         .sort({ createdAt: -1 });
@@ -81,12 +102,23 @@ export class DocumentService {
         version: 1,
         fileName: documentData.fileName,
         filePath: documentData.filePath,
+        fileType: documentData.fileType,
+        fileSize: documentData.fileSize,
         uploadedBy: userId,
         uploadedAt: new Date(),
         notes: documentData.notes || 'Initial version'
       }];
       
       const document = await Document.create(documentData);
+      
+      // Create activity record for document creation
+      await this.createDocumentActivity(
+        document,
+        'DOCUMENT_CREATED',
+        `Document "${document.title}" was created`,
+        userId
+      );
+      
       logger.info('New document created', { documentId: document._id });
       return document;
     } catch (error) {
@@ -97,8 +129,11 @@ export class DocumentService {
 
   /**
    * Update a document
+   * @param documentId - ID of the document to update
+   * @param updateData - Data to update the document with
+   * @param userId - ID of the user performing the update
    */
-  static async updateDocument(documentId: string, updateData: any): Promise<any | null> {
+  static async updateDocument(documentId: string, updateData: any, userId: string): Promise<any | null> {
     try {
       const document = await Document.findOne({ _id: documentId, isDeleted: false });
       if (!document) return null;
@@ -112,6 +147,14 @@ export class DocumentService {
         .populate('case', 'caseNumber title')
         .populate('client', 'firstName lastName company');
       
+      // Create activity record for document update
+      await this.createDocumentActivity(
+        updatedDocument,
+        'DOCUMENT_UPDATED',
+        `Document "${updatedDocument && updatedDocument.title}" was updated`,
+        userId
+      );
+      
       logger.info('Document updated', { documentId });
       return updatedDocument;
     } catch (error) {
@@ -122,8 +165,10 @@ export class DocumentService {
 
   /**
    * Delete a document (soft delete)
+   * @param documentId - ID of the document to delete
+   * @param userId - ID of the user performing the deletion
    */
-  static async deleteDocument(documentId: string): Promise<boolean> {
+  static async deleteDocument(documentId: string, userId: string): Promise<boolean> {
     try {
       const document = await Document.findById(documentId);
       if (!document) return false;
@@ -131,6 +176,14 @@ export class DocumentService {
       // Soft delete by setting isDeleted flag
       document.isDeleted = true;
       await document.save();
+      
+      // Create activity record for document deletion
+      await this.createDocumentActivity(
+        document,
+        'DOCUMENT_DELETED',
+        `Document "${document.title}" was deleted`,
+        userId
+      );
       
       logger.info('Document deleted (soft)', { documentId });
       return true;
@@ -165,6 +218,14 @@ export class DocumentService {
       
       document.versions.push(newVersion);
       await document.save();
+      
+      // Create activity record for adding new document version
+      await this.createDocumentActivity(
+        document,
+        'DOCUMENT_VERSION_ADDED',
+        `New version (v${newVersion.version}) added to document "${document.title}"`,
+        userId
+      );
       
       logger.info('Document version added', { documentId, version: newVersion.version });
       return document;

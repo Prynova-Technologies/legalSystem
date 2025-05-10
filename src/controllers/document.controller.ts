@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { IUserDocument } from '../interfaces/user.interface';
 import Document from '../models/document.model';
 import { DocumentType } from '../interfaces/document.interface';
+import { DocumentService } from '../services/document.service';
 
 // Get all documents with filtering options
 export const getAllDocuments = async (req: Request, res: Response, next: NextFunction) => {
@@ -36,11 +37,7 @@ export const getAllDocuments = async (req: Request, res: Response, next: NextFun
       ];
     }
     
-    const documents = await Document.find(filter)
-      .populate('createdBy', 'firstName lastName')
-      .populate('case', 'caseNumber title')
-      .populate('client', 'firstName lastName company')
-      .sort({ createdAt: -1 });
+    const documents = await DocumentService.getAllDocuments(filter)
     
     res.status(200).json({
       success: true,
@@ -55,11 +52,7 @@ export const getAllDocuments = async (req: Request, res: Response, next: NextFun
 // Get a single document by ID
 export const getDocumentById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const document = await Document.findOne({ _id: req.params.id, isDeleted: false })
-      .populate('uploadedBy', 'firstName lastName')
-      .populate('case', 'caseNumber title')
-      .populate('client', 'firstName lastName company')
-      .populate('versions.uploadedBy', 'firstName lastName');
+    const document = await DocumentService.getDocumentById( req.params.id )
     
     if (!document) {
       return res.status(404).json({
@@ -89,17 +82,8 @@ export const createDocument = async (req: Request, res: Response, next: NextFunc
       });
     }
     
-    // Set initial version
-    req.body.versions = [{
-      version: 1,
-      fileName: req.body.fileName,
-      filePath: req.body.filePath,
-      uploadedBy: req.body.uploadedBy,
-      uploadedAt: new Date(),
-      notes: req.body.notes || 'Initial version'
-    }];
-    
-    const document = await Document.create(req.body);
+    // Use document service to create document with activity tracking
+    const document = await DocumentService.createDocument(req.body, user._id);
     
     res.status(201).json({
       success: true,
@@ -113,12 +97,12 @@ export const createDocument = async (req: Request, res: Response, next: NextFunc
 // Update a document
 export const updateDocument = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const document = await Document.findOne({ _id: req.params.id, isDeleted: false });
-    
-    if (!document) {
-      return res.status(404).json({
+    // Check if user is authenticated
+    const user = req.user as IUserDocument | undefined;
+    if (!user) {
+      return res.status(401).json({
         success: false,
-        message: 'Document not found'
+        message: 'User not authenticated'
       });
     }
     
@@ -127,14 +111,15 @@ export const updateDocument = async (req: Request, res: Response, next: NextFunc
       delete req.body.versions;
     }
     
-    const updatedDocument = await Document.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    )
-      .populate('uploadedBy', 'firstName lastName')
-      .populate('case', 'caseNumber title')
-      .populate('client', 'firstName lastName company');
+    // Use document service to update document with activity tracking
+    const updatedDocument = await DocumentService.updateDocument(req.params.id, req.body, user._id);
+    
+    if (!updatedDocument) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
     
     res.status(200).json({
       success: true,
@@ -148,18 +133,24 @@ export const updateDocument = async (req: Request, res: Response, next: NextFunc
 // Delete a document (soft delete)
 export const deleteDocument = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const document = await Document.findById(req.params.id);
+    // Check if user is authenticated
+    const user = req.user as IUserDocument | undefined;
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
     
-    if (!document) {
+    // Use document service to delete document with activity tracking
+    const success = await DocumentService.deleteDocument(req.params.id, user._id);
+    
+    if (!success) {
       return res.status(404).json({
         success: false,
         message: 'Document not found'
       });
     }
-    
-    // Soft delete by setting isDeleted flag
-    document.isDeleted = true;
-    await document.save();
     
     res.status(200).json({
       success: true,
@@ -173,15 +164,6 @@ export const deleteDocument = async (req: Request, res: Response, next: NextFunc
 // Add a new version to a document
 export const addDocumentVersion = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const document = await Document.findOne({ _id: req.params.id, isDeleted: false });
-    
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-    
     // Check if user is authenticated
     const user = req.user as IUserDocument | undefined;
     if (!user) {
@@ -191,21 +173,15 @@ export const addDocumentVersion = async (req: Request, res: Response, next: Next
       });
     }
     
-    // Calculate next version number
-    const nextVersion = document.versions.length + 1;
+    // Use document service to add version with activity tracking
+    const document = await DocumentService.addDocumentVersion(req.params.id, req.body, user._id);
     
-    // Add user ID from authenticated user
-    const versionData = {
-      version: nextVersion,
-      fileName: req.body.fileName,
-      filePath: req.body.filePath,
-      uploadedBy: user.id,
-      uploadedAt: new Date(),
-      notes: req.body.notes || `Version ${nextVersion}`
-    };
-    
-    document.versions.push(versionData);
-    await document.save();
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
     
     res.status(200).json({
       success: true,

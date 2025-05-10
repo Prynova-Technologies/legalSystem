@@ -2,6 +2,7 @@ import Client from '../models/client.model';
 import Case from '../models/case.model';
 import Invoice from '../models/invoice.model';
 import logger from '../utils/logger';
+import Document from '../models/document.model';
 
 /**
  * Service for client-related operations
@@ -67,8 +68,30 @@ export class ClientService {
    */
   static async getClientById(clientId: string): Promise<any | null> {
     try {
-      return await Client.findOne({ _id: clientId, isDeleted: false })
+      const client = await Client.findOne({ _id: clientId, isDeleted: false })
         .populate('primaryAttorney', 'firstName lastName email');
+
+        if (!client) return null;
+
+        // Fetch related documents
+      const documents = await Document.find({ client: clientId, isDeleted: false })
+      .populate('createdBy', 'firstName lastName')
+      .sort({ createdAt: -1 });
+
+      const cases = await Case.find({ client: clientId, isDeleted: false })
+        .populate('assignedAttorneys.attorney', 'firstName lastName email assignedAttorneys.isPrimary')
+        .populate('assignedParalegals', 'firstName lastName email')
+        .populate('parties');
+
+      // Convert to plain object to allow adding properties
+      const clientObject = client.toObject ? client.toObject() : client ;
+
+      clientObject.documents = documents;
+      clientObject.cases = cases;
+      
+      return clientObject;
+
+
     } catch (error) {
       logger.error('Error fetching client by ID', { error, clientId });
       throw error;

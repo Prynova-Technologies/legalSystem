@@ -74,7 +74,7 @@ export class CaseService {
         .sort({ dueDate: 1 });
       
       // Fetch related documents
-      const documents = await Document.find({ client: caseId, isDeleted: false })
+      const documents = await Document.find({ case: caseId, isDeleted: false })
         .populate('createdBy', 'firstName lastName')
         .sort({ createdAt: -1 });
       

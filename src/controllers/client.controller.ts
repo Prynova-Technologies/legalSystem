@@ -40,7 +40,7 @@ export const getAllClients = async (req: Request, res: Response, next: NextFunct
 // Get a single client by ID
 export const getClientById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await Client.findById({ _id: req.params.id, isDeleted: false })
+    const client = await ClientService.getClientById(req.params.id)
     
     if (!client) {
       return res.status(404).json({
@@ -65,7 +65,7 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
     req.body.isActive = true;
     req.body.intakeDate = req.body.intakeDate || new Date();
     
-    const client = await Client.create(req.body);
+    const client = await ClientService.createClient(req.body);
     
     res.status(201).json({
       success: true,
@@ -79,25 +79,11 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
 // Update a client
 export const updateClient = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await Client.findById({ _id: req.params.id, isDeleted: false });
-    
-    if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found'
-      });
-    }
-    
-    // For PATCH requests, we only update the fields that are provided
-    const updatedClient = await Client.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    )
+    const client = await ClientService.updateClient(req.params.id, req.body);
     
     res.status(200).json({
       success: true,
-      data: updatedClient
+      data: client
     });
   } catch (error) {
     next(error);
@@ -107,33 +93,7 @@ export const updateClient = async (req: Request, res: Response, next: NextFuncti
 // Delete a client (soft delete)
 export const deleteClient = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const client = await Client.findById(req.params.id);
-    
-    if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found'
-      });
-    }
-    
-    // Check if client has active cases
-    const activeCases = await Case.countDocuments({
-      client: req.params.id,
-      status: { $ne: 'closed' },
-      isDeleted: false
-    });
-    
-    if (activeCases > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot delete client with active cases'
-      });
-    }
-    
-    // Soft delete by setting isDeleted flag
-    client.isDeleted = true;
-    client.isActive = false;
-    await client.save();
+    await ClientService.deleteClient(req.params.id);
     
     res.status(200).json({
       success: true,
