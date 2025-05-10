@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchTimeEntries, fetchExpenses, fetchInvoices } from '../store/slices/billingSlice';
 import { Tabs, DataTable, Button, StatusBadge } from '../components/common';
 import * as FaIcons from 'react-icons/fa';
 import '../components/common/CommonStyles.css';
+import TimeEntryModal from '../components/billing/TimeEntryModal';
+import ExpenseModal from '../components/billing/ExpenseModal';
+import InvoiceModal from '../components/billing/InvoiceModal';
 
 const Billing: React.FC = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { timeEntries, expenses, invoices, isLoading, error } = useSelector(
     (state: RootState) => state.billing
   );
   const [activeTab, setActiveTab] = useState('time-entries');
+  const [isTimeEntryModalOpen, setIsTimeEntryModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => {
     dispatch(fetchTimeEntries() as any);
@@ -65,7 +71,7 @@ const Billing: React.FC = () => {
           <h2 className="detail-title">Time Entries</h2>
           <Button 
             variant="primary" 
-            onClick={() => navigate('/billing/time-entry/new')}
+            onClick={() => setIsTimeEntryModalOpen(true)}
           >
             <FaIcons.FaPlus /> New Time Entry
           </Button>
@@ -96,7 +102,11 @@ const Billing: React.FC = () => {
                 <Button 
                   variant="secondary" 
                   size="small"
-                  onClick={() => navigate(`/billing/time-entry/${row.id}`)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedItem(row);
+                    setIsTimeEntryModalOpen(true);
+                  }}
                 >
                   <FaIcons.FaEdit /> Edit
                 </Button>
@@ -121,7 +131,7 @@ const Billing: React.FC = () => {
           <h2 className="detail-title">Expenses</h2>
           <Button 
             variant="primary" 
-            onClick={() => navigate('/billing/expense/new')}
+            onClick={() => setIsExpenseModalOpen(true)}
           >
             <FaIcons.FaReceipt /> New Expense
           </Button>
@@ -153,7 +163,11 @@ const Billing: React.FC = () => {
                 <Button 
                   variant="secondary" 
                   size="small"
-                  onClick={() => navigate(`/billing/expense/${row.id}`)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedItem(row);
+                    setIsExpenseModalOpen(true);
+                  }}
                 >
                   <FaIcons.FaEdit /> Edit
                 </Button>
@@ -178,7 +192,7 @@ const Billing: React.FC = () => {
           <h2 className="detail-title">Invoices</h2>
           <Button 
             variant="primary" 
-            onClick={() => navigate('/billing/invoice/new')}
+            onClick={() => setIsInvoiceModalOpen(true)}
           >
             <FaIcons.FaFileInvoiceDollar /> Create Invoice
           </Button>
@@ -208,9 +222,13 @@ const Billing: React.FC = () => {
                 <Button 
                   variant="secondary" 
                   size="small"
-                  onClick={() => navigate(`/billing/invoice/${row.id}`)}                
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedItem(row);
+                    setIsInvoiceModalOpen(true);
+                  }}
                 >
-                  <FaIcons.FaEye /> View
+                  <FaIcons.FaEdit /> Edit
                 </Button>
               )
             }
@@ -335,6 +353,35 @@ const Billing: React.FC = () => {
 
   return (
     <div className="billing-container">
+      <TimeEntryModal
+        isOpen={isTimeEntryModalOpen}
+        onClose={() => {
+          setIsTimeEntryModalOpen(false);
+          setSelectedItem(null);
+        }}
+        timeEntry={selectedItem}
+        onSuccess={() => dispatch(fetchTimeEntries() as any)}
+      />
+      
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => {
+          setIsExpenseModalOpen(false);
+          setSelectedItem(null);
+        }}
+        expense={selectedItem}
+        onSuccess={() => dispatch(fetchExpenses() as any)}
+      />
+      
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => {
+          setIsInvoiceModalOpen(false);
+          setSelectedItem(null);
+        }}
+        invoice={selectedItem}
+        onSuccess={() => dispatch(fetchInvoices() as any)}
+      />
       <div className="billing-header">
         <h1>Billing & Finance</h1>
       </div>
