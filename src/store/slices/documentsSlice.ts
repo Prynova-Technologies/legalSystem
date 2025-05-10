@@ -70,7 +70,7 @@ export const uploadDocument = createAsyncThunk(
       const response = await createDocument(documentData);
       // Refresh the documents list after successful upload
       await dispatch(fetchDocuments());
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue('Failed to upload document');
     }
@@ -186,6 +186,10 @@ const documentsSlice = createSlice({
       })
       .addCase(uploadDocument.fulfilled, (state, action) => {
         state.isLoading = false;
+        // Ensure documents is an array before pushing
+        if (!Array.isArray(state.documents)) {
+          state.documents = [];
+        }
         state.documents.push(action.payload);
         state.currentDocument = action.payload;
       })

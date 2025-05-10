@@ -93,7 +93,7 @@ export const fetchClientById = createAsyncThunk(
         firstName: client.firstName || '',
         lastName: client.lastName || '',
         organizationName: client.company || '',
-        contactInfo: client.contactInfo || {
+        contactInfo: client.contacts || {
           email: '',
           phone: '',
           address: {
@@ -107,7 +107,7 @@ export const fetchClientById = createAsyncThunk(
         cases: client.cases || [],
         intakeDate: client.intakeDate || client.createdAt || new Date().toISOString(),
         kycVerified: client.kycVerified || false,
-        kycDocuments: client.kycDocuments || [],
+        kycDocuments: client.documents || [],
         conflictCheckStatus: client.conflictCheckCompleted ? 'cleared' : 'flagged',
         notes: client.notes || [],
         createdAt: client.createdAt || new Date().toISOString(),

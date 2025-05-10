@@ -18,8 +18,6 @@ const CaseDetail: React.FC = () => {
   const dispatch = useDispatch();
   
   const { currentCase, isLoading, error } = useSelector((state: RootState) => state.cases);
-  const { tasks } = useSelector((state: RootState) => state.tasks);
-  const { documents } = useSelector((state: RootState) => state.documents);
   
   const [activeTab, setActiveTab] = useState('overview');
   const [noteContent, setNoteContent] = useState('');
@@ -36,8 +34,6 @@ const CaseDetail: React.FC = () => {
   useEffect(() => {
     if (id) {
       dispatch(fetchCaseById(id) as any);
-      dispatch(fetchTasks() as any);
-      dispatch(fetchDocuments() as any);
     }
   }, [dispatch, id]);
 

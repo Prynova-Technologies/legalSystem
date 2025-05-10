@@ -162,3 +162,41 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* New styles for the search-select component */
+.search-select {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.search-select input {
+  margin-bottom: 8px;
+}
+
+.search-select select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+}
+
+/* Styles for the radio group */
+.radio-group {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 10px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.radio-group input[type="radio"] {
+  margin-right: 8px;
+}

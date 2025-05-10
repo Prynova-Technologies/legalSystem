@@ -22,6 +22,8 @@ export interface DocumentVersion {
   version: number;
   fileName: string;
   filePath: string;
+  fileType?: string;
+  fileSize?: number;
   uploadedBy: string;
   uploadedAt: Date;
   notes?: string;
