@@ -93,6 +93,12 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
+.log-out {
+  font-size: 1.8rem;
+  margin-right: 0.75rem;
+  color: #007bff;
+}
+
 .user-details {
   display: flex;
   flex-direction: column;
