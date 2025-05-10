@@ -6,7 +6,7 @@ export interface ButtonProps {
   /** Button text content */
   children: React.ReactNode;
   /** Button variant - determines color scheme */
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'text';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'text' | 'outline';
   /** Button size */
   size?: 'small' | 'medium' | 'large';
   /** Optional click handler */
@@ -34,7 +34,7 @@ export interface ButtonProps {
 const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
-  size = 'medium',
+  size = 'small',
   onClick,
   to,
   className = '',

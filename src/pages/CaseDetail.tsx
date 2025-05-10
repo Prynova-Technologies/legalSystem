@@ -11,6 +11,7 @@ import '../styles/caseDetail.css';
 import { DocumentUploadModal, DocumentCard } from '../components/documents';
 import { AddTaskModal, TaskCard } from '../components/tasks';
 import { FaIcons } from 'react-icons/fa';
+import { Button } from '../components/common';
 
 const CaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -437,7 +438,7 @@ const CaseDetail: React.FC = () => {
             {activeTab === 'tasks' && (
               <div className="tasks-tab">
                 <div className="tab-header-actions">
-                  <button className="btn btn-primary" onClick={() => setIsAddTaskModalOpen(true)}>Add Task</button>
+                  <Button variant='outline' onClick={() => setIsAddTaskModalOpen(true)}>Add Task</Button>
                 </div>
                 
                 {/* Add Task Modal */}
@@ -476,9 +477,9 @@ const CaseDetail: React.FC = () => {
             {activeTab === 'documents' && (
               <div className="documents-tab">
                 <div className="tab-header-actions">
-                  <button className="btn btn-primary" onClick={() => setIsDocumentUploadModalOpen(true)}>
+                  <Button variant='outline'  onClick={() => setIsDocumentUploadModalOpen(true)}>
                   📄 Upload Document
-                  </button>
+                  </Button>
                 </div>
                 
                 {/* Document Upload Modal */}
@@ -518,7 +519,7 @@ const CaseDetail: React.FC = () => {
                       rows={4}
                       required
                     />
-                    <button type="submit" disabled={isLoading ? true : false} className="btn btn-primary">{isLoading ? 'submiting...' : 'Add Note'}</button>
+                    <Button type="submit" disabled={isLoading ? true : false} size='small' variant='outline'>{isLoading ? 'submiting...' : 'Add Note'}</Button>
                   </form>
                 </div>
                 

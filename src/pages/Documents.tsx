@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchDocuments, setFilters, clearFilters } from '../store/slices/documentsSlice';
 import { DocumentCategory } from '../types';
-import { Button } from '../components/common';
+import { Button, FilterSection, FilterConfig } from '../components/common';
 import { DocumentUploadModal, DocumentCard } from '../components/documents';
 import './Documents.css';
+import * as FaIcons from 'react-icons/fa';
 
 const Documents: React.FC = () => {
   const dispatch = useDispatch();
@@ -32,6 +33,21 @@ const Documents: React.FC = () => {
     dispatch(clearFilters());
     setSearchInput('');
   };
+  
+  const filterConfig: FilterConfig[] = [
+    {
+      type: 'select',
+      name: 'category',
+      label: 'Category',
+      options: [
+        { label: 'All Categories', value: '' },
+        ...Object.values(DocumentCategory).map(category => ({
+          label: category.replace('_', ' '),
+          value: category
+        }))
+      ]
+    }
+  ];
 
   // Filter documents based on current filters
   const filteredDocuments = documents.data?.filter(document => {
@@ -117,10 +133,10 @@ const Documents: React.FC = () => {
       <div className="page-header">
         <h1>Documents</h1>
         <Button 
-          variant="primary" 
+          variant="outline" 
           onClick={() => setIsUploadModalOpen(true)}
         >
-          Upload Document
+          <FaIcons.FaUpload /> Upload Document
         </Button>
       </div>
       
@@ -133,37 +149,17 @@ const Documents: React.FC = () => {
         }} 
       />
 
-      <div className="filters-section">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            placeholder="Search documents..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="search-input"
-          />
-          <button type="submit" className="search-button">Search</button>
-        </form>
-
-        <div className="filter-controls">
-          <div className="filter-group">
-            <label>Category:</label>
-            <select
-              value={filters.category || ''}
-              onChange={(e) => handleFilterChange('category', e.target.value || null)}
-            >
-              <option value="">All Categories</option>
-              {Object.values(DocumentCategory).map(category => (
-                <option key={category} value={category}>{category.replace('_', ' ')}</option>
-              ))}
-            </select>
-          </div>
-
-          <button onClick={handleClearFilters} className="clear-filters-button">
-            Clear Filters
-          </button>
-        </div>
-      </div>
+      <FilterSection
+        filters={filterConfig}
+        initialValues={{
+          category: filters.category || ''
+        }}
+        onFilterChange={handleFilterChange}
+        onSearch={handleSearch}
+        onClearFilters={handleClearFilters}
+        searchInputValue={searchInput}
+        onSearchInputChange={(value) => setSearchInput(value)}
+      />
 
       {isLoading ? (
         <div className="loading-indicator">Loading documents...</div>
@@ -180,7 +176,7 @@ const Documents: React.FC = () => {
               key={document.id || document._id}
               document={document}
               className="clickable-card"
-              onPreview={() => navigate(`/documents/${document.id || document._id}`)}
+              onPreview={() => window.open(document.versions[0].filePath, '_blank')}
               onDownload={() => window.open(document.versions[0].filePath, '_blank')}
             />
           ))}
