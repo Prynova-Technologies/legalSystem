@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { fetchEvents } from '../../store/slices/calendarSlice';
+import { fetchTasks } from '../../store/slices/tasksSlice';
 import { Modal } from './index';
 import * as FaIcons from 'react-icons/fa';
 import './CommonStyles.css';
@@ -13,13 +13,14 @@ interface CalendarModalProps {
 
 const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const { events, isLoading } = useSelector((state: RootState) => state.calendar);
+  const { tasks, isLoading: tasksLoading } = useSelector((state: RootState) => state.tasks);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week'>('month');
+  const [selectedItem, setSelectedItem] = useState<{type: 'event' | 'task', id: string} | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      dispatch(fetchEvents() as any);
+      dispatch(fetchTasks() as any);
     }
   }, [dispatch, isOpen]);
 
@@ -64,16 +65,40 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
-  // Filter events for the current view
-  const getEventsForDate = (date: Date) => {
-    return events.filter(event => {
-      const eventDate = new Date(event.startTime);
+  // Get combined events and tasks for the current view
+  const getItemsForDate = (date: Date) => {
+    
+    // Get tasks with due dates matching this date
+    const dateTasks = tasks.filter(task => {
+      const taskDate = new Date(task.dueDate);
       return (
-        eventDate.getDate() === date.getDate() &&
-        eventDate.getMonth() === date.getMonth() &&
-        eventDate.getFullYear() === date.getFullYear()
+        taskDate.getDate() === date.getDate() &&
+        taskDate.getMonth() === date.getMonth() &&
+        taskDate.getFullYear() === date.getFullYear()
       );
     });
+    
+    // Return combined items
+    return {
+      tasks: dateTasks,
+      totalCount: dateTasks.length
+    };
+  };
+  
+  // Handle item click
+  const handleItemClick = (type: 'event' | 'task', id: string) => {
+    setSelectedItem({ type, id });
+  };
+  
+  // Get task priority class
+  const getTaskPriorityClass = (priority: string) => {
+    switch (priority) {
+      case 'low': return 'task-priority-low';
+      case 'medium': return 'task-priority-medium';
+      case 'high': return 'task-priority-high';
+      case 'urgent': return 'task-priority-urgent';
+      default: return '';
+    }
   };
 
   // Render month view
@@ -92,7 +117,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
     // Add cells for each day of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
-      const dayEvents = getEventsForDate(date);
+      const dayItems = getItemsForDate(date);
       const isToday = new Date().toDateString() === date.toDateString();
 
       days.push(
@@ -104,17 +129,22 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
             <span className="day-number">{day}</span>
           </div>
           <div className="day-events">
-            {dayEvents.slice(0, 3).map(event => (
+            
+            {/* Display tasks */}
+            {dayItems.tasks.slice(0, 2).map(task => (
               <div 
-                key={event.id} 
-                className={`event-item event-type-${event.eventType}`}
-                title={event.title}
+                key={`task-${task._id}`} 
+                className={`event-item task-item ${getTaskPriorityClass(task.priority)}`}
+                title={`${task.title} (${task.priority} priority)`}
+                onClick={() => handleItemClick('task', task._id)}
               >
-                {event.title}
+                <FaIcons.FaTasks className="item-icon" /> {task.title}
               </div>
             ))}
-            {dayEvents.length > 3 && (
-              <div className="more-events">+{dayEvents.length - 3} more</div>
+            
+            {/* Show more indicator if needed */}
+            {dayItems.totalCount > 4 && (
+              <div className="more-events">+{dayItems.totalCount - 4} more</div>
             )}
           </div>
         </div>
@@ -150,7 +180,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
-      const dayEvents = getEventsForDate(date);
+      const dayItems = getItemsForDate(date);
       const isToday = new Date().toDateString() === date.toDateString();
       
       days.push(
@@ -160,13 +190,15 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
             <div className="week-day-date">{date.getDate()}</div>
           </div>
           <div className="week-day-events">
-            {dayEvents.map(event => (
+            {/* Display tasks */}
+            {dayItems.tasks.map(task => (
               <div 
-                key={event.id} 
-                className={`event-item event-type-${event.eventType}`}
-                title={event.title}
+                key={`task-${task._id}`} 
+                className={`event-item task-item ${getTaskPriorityClass(task.priority)}`}
+                title={`${task.title} (${task.priority} priority)`}
+                onClick={() => handleItemClick('task', task._id)}
               >
-                {event.title}
+                <FaIcons.FaTasks className="item-icon" /> {task.title}
               </div>
             ))}
           </div>
@@ -222,7 +254,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {isLoading ? (
+        {tasksLoading ? (
           <div className="loading-indicator">Loading calendar...</div>
         ) : (
           <div className="calendar-view">
@@ -230,6 +262,34 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose }) => {
           </div>
         )}
       </div>
+      
+      {selectedItem && (
+        <div className="calendar-item-details">
+          <div className="details-header">
+            <h3>{selectedItem.type === 'event' ? 'Event Details' : 'Task Details'}</h3>
+            <button className="close-details" onClick={() => setSelectedItem(null)}>
+              <FaIcons.FaTimes />
+            </button>
+          </div>
+          <div className="details-content">
+            {selectedItem.type === 'task' && (
+              <div className="task-details">
+                {tasks.find(t => t.id === selectedItem.id) ? (
+                  <div>
+                    <h4>{tasks.find(t => t.id === selectedItem.id)?.title}</h4>
+                    <p>{tasks.find(t => t.id === selectedItem.id)?.description}</p>
+                    <p><strong>Due Date:</strong> {new Date(tasks.find(t => t.id === selectedItem.id)?.dueDate || '').toLocaleDateString()}</p>
+                    <p><strong>Priority:</strong> {tasks.find(t => t.id === selectedItem.id)?.priority}</p>
+                    <p><strong>Status:</strong> {tasks.find(t => t.id === selectedItem.id)?.status.replace('_', ' ')}</p>
+                  </div>
+                ) : (
+                  <p>Task not found</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 };

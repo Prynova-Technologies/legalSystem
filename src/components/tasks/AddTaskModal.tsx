@@ -3,12 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Modal } from '../common';
 import { addCaseTaskAsync } from '../../store/slices/casesSlice';
+import { createTask } from '../../store/slices/tasksSlice';
 import FormStyles from '../forms/FormStyles.css'
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  caseId: string;
+  caseId?: string;
   onTaskAdded?: () => void;
 }
 
@@ -105,7 +106,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
       const taskData = {
         title: formData.title,
         description: formData.description,
-        caseId: caseId,
+        ...(caseId ? { caseId } : {}),
         assignedTo: formData.assignedTo,
         assignedBy: user?.data?._id || '',
         priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
@@ -116,7 +117,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
         notes: formData.notes || undefined
       };
 
-      await dispatch(addCaseTaskAsync({ caseId, taskData }) as any);
+      if (caseId) {
+        await dispatch(addCaseTaskAsync({ caseId, taskData }) as any);
+      } else {
+        await dispatch(createTask(taskData) as any);
+      }
       
       if (onTaskAdded) {
         onTaskAdded();

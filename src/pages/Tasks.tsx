@@ -3,8 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchTasks, setFilters, clearFilters, updateTask } from '../store/slices/tasksSlice';
-import { CalendarModal } from '../components/common';
-import { TaskCard } from '../components/tasks';
+import { CalendarModal, Button, FilterSection } from '../components/common';
+import { TaskCard, AddTaskModal } from '../components/tasks';
 import * as FaIcons from 'react-icons/fa';
 import './Tasks.css';
 
@@ -14,6 +14,7 @@ const Tasks: React.FC = () => {
   const { tasks, isLoading, error, filters } = useSelector((state: RootState) => state.tasks);
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTasks() as any);
@@ -141,22 +142,25 @@ const Tasks: React.FC = () => {
     }
   }
 
-  console.log(filteredTasks)
-
   return (
     <div className="tasks-container">
       <div className="page-header">
         <h1>Tasks</h1>
         <div className="page-header-actions">
-          <button 
-            className="btn btn-secondary" 
+          <Button 
+            variant="secondary" 
             onClick={() => setShowCalendar(true)}
+            startIcon={<FaIcons.FaCalendarAlt />}
           >
-            <FaIcons.FaCalendarAlt /> View Calendar
-          </button>
-          <Link to="/tasks/new" className="btn btn-primary">
+            View Calendar
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={() => setShowAddTaskModal(true)}
+            startIcon={<FaIcons.FaPlus />}
+          >
             New Task
-          </Link>
+          </Button>
         </div>
       </div>
       
@@ -164,67 +168,65 @@ const Tasks: React.FC = () => {
         isOpen={showCalendar} 
         onClose={() => setShowCalendar(false)} 
       />
+      
+      <AddTaskModal
+        isOpen={showAddTaskModal}
+        onClose={() => setShowAddTaskModal(false)}
+        onTaskAdded={() => dispatch(fetchTasks() as any)}
+      />
 
-      <div className="filters-section">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            placeholder="Search tasks..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="search-input"
-          />
-          <button type="submit" className="search-button">Search</button>
-        </form>
-
-        <div className="filter-controls">
-          <div className="filter-group">
-            <label>Status:</label>
-            <select
-              value={filters.status || ''}
-              onChange={(e) => handleFilterChange('status', e.target.value || null)}
-            >
-              <option value="">All Statuses</option>
-              <option value="not_started">Not Started</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="deferred">Deferred</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Priority:</label>
-            <select
-              value={filters.priority || ''}
-              onChange={(e) => handleFilterChange('priority', e.target.value || null)}
-            >
-              <option value="">All Priorities</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Due Date:</label>
-            <select
-              value={filters.dueDate || ''}
-              onChange={(e) => handleFilterChange('dueDate', e.target.value || null)}
-            >
-              <option value="">All Dates</option>
-              <option value="today">Today</option>
-              <option value="this_week">This Week</option>
-              <option value="overdue">Overdue</option>
-              <option value="upcoming">Upcoming</option>
-            </select>
-          </div>
-
-          <button onClick={handleClearFilters} className="clear-filters-button">
-            Clear Filters
-          </button>
-        </div>
-      </div>
+      <FilterSection
+        filters={[
+          {
+            type: 'text',
+            name: 'searchTerm',
+            label: 'Search',
+            placeholder: 'Search tasks...'
+          },
+          {
+            type: 'select',
+            name: 'status',
+            label: 'Status',
+            options: [
+              { label: 'All Statuses', value: '' },
+              { label: 'Not Started', value: 'not_started' },
+              { label: 'In Progress', value: 'in_progress' },
+              { label: 'Completed', value: 'completed' },
+              { label: 'Deferred', value: 'deferred' }
+            ]
+          },
+          {
+            type: 'select',
+            name: 'priority',
+            label: 'Priority',
+            options: [
+              { label: 'All Priorities', value: '' },
+              { label: 'Low', value: 'low' },
+              { label: 'Medium', value: 'medium' },
+              { label: 'High', value: 'high' },
+              { label: 'Urgent', value: 'urgent' }
+            ]
+          },
+          {
+            type: 'select',
+            name: 'dueDate',
+            label: 'Due Date',
+            options: [
+              { label: 'All Dates', value: '' },
+              { label: 'Today', value: 'today' },
+              { label: 'This Week', value: 'this_week' },
+              { label: 'Overdue', value: 'overdue' },
+              { label: 'Upcoming', value: 'upcoming' }
+            ]
+          }
+        ]}
+        initialValues={filters}
+        onFilterChange={handleFilterChange}
+        onSearch={handleSearch}
+        onClearFilters={handleClearFilters}
+        searchInputValue={searchInput}
+        onSearchInputChange={(value) => setSearchInput(value)}
+      />
 
       {isLoading ? (
         <div className="loading-indicator">Loading tasks...</div>
