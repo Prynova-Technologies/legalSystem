@@ -44,14 +44,16 @@ const DataForm: React.FC<DataFormProps> = ({
   // Initialize form data with initial values or empty values
   const [formData, setFormData] = useState<Record<string, any>>(() => {
     const data: Record<string, any> = {};
+
+    console.log(initialData)
     
     // Initialize all fields with empty values or initial values
-    sections.forEach(section => {
+    sections?.forEach(section => {
       section.fields.forEach(field => {
-        if (field.type === 'date' && (initialData[field.id] === undefined || initialData[field.id] === null)) {
-          data[field.id] = new Date().toISOString().split('T')[0];
+        if (field && field?.type === 'date' && (initialData[field?.id] === undefined || initialData[field?.id] === null)) {
+          data[field?.id] = new Date().toISOString().split('T')[0];
         } else {
-          data[field.id] = initialData[field.id] !== undefined && initialData[field.id] !== null ? initialData[field.id] : '';
+          data[field?.id] = initialData[field?.id] !== undefined && initialData[field?.id] !== null ? initialData[field?.id] : '';
         }
       });
     });
