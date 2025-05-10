@@ -33,8 +33,6 @@ const Documents: React.FC = () => {
     setSearchInput('');
   };
 
-  console.log(documents)
-
   // Filter documents based on current filters
   const filteredDocuments = documents.data?.filter(document => {
     // Search term filter

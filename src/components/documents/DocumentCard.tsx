@@ -100,6 +100,11 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
             <span className="metadata-label">By:</span>
             <span className="metadata-value">{document.createdBy?.fullName || 'Unknown'}</span>
           </div>
+
+          <div className="metadata-item">
+            <span className="metadata-label">{document.client ? 'Client:' : 'Case:'}</span>
+            <span className="metadata-value">{document.client ? document.client.firstName + " " + document.client.lastName : document.case.title}</span>
+          </div>
           
           <div className="metadata-item">
             <span className="metadata-label">Version:</span>
