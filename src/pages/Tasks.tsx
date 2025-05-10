@@ -148,7 +148,7 @@ const Tasks: React.FC = () => {
         <h1>Tasks</h1>
         <div className="page-header-actions">
           <Button 
-            variant="secondary" 
+            variant="outline" 
             onClick={() => setShowCalendar(true)}
             startIcon={<FaIcons.FaCalendarAlt />}
           >

@@ -7,6 +7,7 @@ import { DocumentCategory } from '../types';
 import { Button, FilterSection, FilterConfig } from '../components/common';
 import { DocumentUploadModal, DocumentCard } from '../components/documents';
 import './Documents.css';
+import * as FaIcons from 'react-icons/fa';
 
 const Documents: React.FC = () => {
   const dispatch = useDispatch();
@@ -132,10 +133,10 @@ const Documents: React.FC = () => {
       <div className="page-header">
         <h1>Documents</h1>
         <Button 
-          variant="primary" 
+          variant="outline" 
           onClick={() => setIsUploadModalOpen(true)}
         >
-          Upload Document
+          <FaIcons.FaUpload /> Upload Document
         </Button>
       </div>
       

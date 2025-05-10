@@ -572,7 +572,7 @@ dispatch(fetchClientById(id) as any);
                   title="Client Cases" 
                   actions={
                     <Button 
-                      variant="primary" 
+                      variant="outline" 
                       onClick={() => navigate(`/cases/new-case`)}
                     >
                       <FaIcons.FaPlus /> Create New Case
@@ -619,8 +619,8 @@ dispatch(fetchClientById(id) as any);
                 <DetailView 
                   title="Client Documents" 
                   actions={
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="outline" 
                       onClick={() => setIsDocumentUploadModalOpen(true)}
                     >
                       <FaIcons.FaUpload /> Upload Document
@@ -640,14 +640,7 @@ dispatch(fetchClientById(id) as any);
                           key={doc._id}
                           document={doc}
                           onPreview={() => window.open(doc.versions[0].filePath, '_blank')}
-                          // onEdit={() => navigate(`/documents/${doc._id}`)}
                           onDownload={() => window.open(doc.versions[0].filePath, '_blank')}
-                          // onDelete={() => {
-                          //   if (window.confirm('Are you sure you want to delete this document?')) {
-                          //     // Handle document deletion logic here
-                          //     console.log('Delete document:', doc._id);
-                          //   }
-                          // }}
                         />
                       ))}
                     </div>

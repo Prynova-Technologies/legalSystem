@@ -123,18 +123,18 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
       
       <div className="document-card-footer">
         {onPreview && (
-          <Button variant="secondary" size="small" onClick={() => onPreview(document)}>
-            <FaIcons.FaEye /> Preview
+          <Button variant="outline" size="small" onClick={() => onPreview(document)}>
+            <FaIcons.FaEye />
           </Button>
         )}
         {onDownload && (
-          <Button variant="secondary" size="small" onClick={() => onDownload(document)}>
-            <FaIcons.FaDownload /> Download
+          <Button variant="outline" size="small" onClick={() => onDownload(document)}>
+            <FaIcons.FaDownload />
           </Button>
         )}
         {onEdit && (
-          <Button variant="secondary" size="small" onClick={() => onEdit(document)}>
-            <FaIcons.FaEdit /> Edit
+          <Button variant="outline" size="small" onClick={() => onEdit(document)}>
+            <FaIcons.FaEdit />
           </Button>
         )}
         {onDelete && (
