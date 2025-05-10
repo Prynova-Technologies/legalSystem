@@ -50,15 +50,11 @@ const DataForm: React.FC<DataFormProps> = ({
     // Initialize all fields with empty values or initial values
     sections?.forEach(section => {
       section.fields.forEach(field => {
-<<<<<<< HEAD
-        data[field.id] = initialData[field.id] !== undefined ? initialData[field.id] : '';
-=======
         if (field && field?.type === 'date' && (initialData[field?.id] === undefined || initialData[field?.id] === null)) {
           data[field?.id] = new Date().toISOString().split('T')[0];
         } else {
           data[field?.id] = initialData[field?.id] !== undefined && initialData[field?.id] !== null ? initialData[field?.id] : '';
         }
->>>>>>> 2cb7c3aca9bc9e1fdf1fc345287dbe980040d720
       });
     });
     
