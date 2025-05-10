@@ -16,8 +16,7 @@ const ClientDetail: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { clients, isLoading, error } = useSelector((state: RootState) => state.clients);
-  const currentClient = clients.find(client => client.id === id);
+  const { currentClient, isLoading, error } = useSelector((state: RootState) => state.clients);
   const { cases } = useSelector((state: RootState) => state.cases);
   const { documents } = useSelector((state: RootState) => state.documents);
   
@@ -43,9 +42,8 @@ const ClientDetail: React.FC = () => {
   useEffect(() => {
     // Reset state when ID changes
     if (id) {
-      // Fetch related data
-      dispatch(fetchCases() as any);
-      dispatch(fetchDocuments() as any);
+// Always fetch the client directly from the API to ensure we have the latest data
+dispatch(fetchClientById(id) as any);
     } else {
       // Clear current client if no ID is provided
       dispatch(setCurrentClient(null));
@@ -55,14 +53,6 @@ const ClientDetail: React.FC = () => {
     setActiveTab('overview');
     setIsEditing(false);
   }, [dispatch, id]);
-
-  // Handle client data loading
-  // useEffect(() => {
-  //   if (id) {
-  //     // Always fetch the client directly from the API to ensure we have the latest data
-  //     dispatch(fetchClientById(id) as any);
-  //   }
-  // }, [dispatch, id]);
   
   // Show error message if client couldn't be loaded
   useEffect(() => {
@@ -261,8 +251,8 @@ const ClientDetail: React.FC = () => {
   }
 
   // Filter client-related cases and documents
-  const clientCases = cases?.filter(c => c.client === id);
-  const clientDocuments = documents.data?.filter(doc => doc.client?._id === id);
+  const clientCases = currentClient?.cases
+  const clientDocuments = currentClient?.kycDocuments
 
   const getClientName = () => {
     return currentClient.type === 'individual' ?
@@ -523,7 +513,7 @@ const ClientDetail: React.FC = () => {
 
                   <DetailSection title="Contact Information">
                     {
-                      currentClient.contactInfo.map(c => {
+                     currentClient && currentClient.contactInfo.map(c => {
                         if (c.type === 'address') {
                           return (
                             <DetailItem key={c._id} label={c.type}>

@@ -4,18 +4,27 @@ import { RootState } from '../../store';
 import { DocumentType } from '../../types/documentTypes';
 import { uploadFile } from '../../services/firebaseService';
 import { createDocument } from '../../services/documentService';
-import { fetchDocuments } from '../../store/slices/documentsSlice';
+import { fetchDocuments, uploadDocument } from '../../store/slices/documentsSlice';
+import { getAllClients } from '../../services/clientService';
+import { caseService } from '../../services/caseService';
+import { fetchCases } from '../../store/slices/casesSlice';
+import { fetchClients } from '../../store/slices/clientsSlice';
+import { Button } from '../common';
+import './DocumentUploadModal.css';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  clientId: string;
+  clientId?: string;
   onUploadFinish: () => void;
 }
 
 const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClose, clientId, onUploadFinish }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { cases } = useSelector((state: RootState) => state.cases);
+  const { clients } = useSelector((state: RootState) => state.clients);
+  const token = localStorage.getItem('token') || '';
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -24,13 +33,40 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  
+  // For document association
+  const [documentFor, setDocumentFor] = useState<'client' | 'case'>(clientId ? 'client' : 'client');
+  const [selectedClientId, setSelectedClientId] = useState<string>(clientId || '');
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [caseSearchTerm, setCaseSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (clientId) {
+      setSelectedClientId(clientId);
+      setDocumentFor('client');
+      return;
+    }
+
+    dispatch(fetchCases() as any);
+    // Load clients and cases when modal opens
+    dispatch(fetchClients() as any);
+  }, [dispatch, clientId]);
 
   // Reset form when modal is opened/closed
   useEffect(() => {
     if (!isOpen) {
       resetForm();
+    } else {
+      // If clientId is provided, set it as the selected client
+      if (clientId) {
+        setSelectedClientId(clientId);
+        setDocumentFor('client');
+      }
     }
-  }, [isOpen]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const resetForm = () => {
     setTitle('');
@@ -39,11 +75,19 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
     setFile(null);
     setUploadProgress(0);
     setError(null);
+    if (!clientId) {
+      setDocumentFor('client');
+      setSelectedClientId('');
+      setSelectedCaseId('');
+      setClientSearchTerm('');
+      setCaseSearchTerm('');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
     }
   };
 
@@ -77,37 +121,41 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
         (progress) => setUploadProgress(progress)
       );
 
+      // Validate document association
+      if (!clientId && documentFor === 'client' && !selectedClientId) {
+        setError('Please select a client');
+        setIsUploading(false);
+        return;
+      }
+      
+      if (!clientId && documentFor === 'case' && !selectedCaseId) {
+        setError('Please select a case');
+        setIsUploading(false);
+        return;
+      }
+      
       // Create document in the backend
       const documentData = {
         title,
         description,
         documentType,
-        client: clientId,
+        client: documentFor === 'client' ? (clientId || selectedClientId) : undefined,
+        case: documentFor === 'case' ? selectedCaseId : undefined,
         fileName: filePath.name,
         filePath: filePath.url,
+        fileType: file.type,
+        fileSize: file.size,
         uploadedBy: user.data._id,
-        // versions: [
-        //   {
-        //     version: 1,
-        //     fileName: file.name,
-        //     filePath,
-        //     uploadedBy: user.data._id,
-        //     uploadedAt: new Date(),
-        //   },
-        // ],
         currentVersion: 1,
         createdBy: user.data._id,
         isTemplate: false,
         isDeleted: false,
       };
 
-      await createDocument(documentData);
-      
-      // Refresh documents list
-      dispatch(fetchDocuments() as any);
+      await dispatch(uploadDocument(documentData));
 
       //signal parent file
-      onUploadFinish()
+      // onUploadFinish()
       
       // Close modal and reset form
       onClose();
@@ -150,6 +198,122 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
             />
           </div>
           
+          {!clientId && (
+            <div className="form-group">
+              <label htmlFor="documentFor">Document For *</label>
+              <div className="radio-group">
+                <label>
+                  <input
+                    type="radio"
+                    name="documentFor"
+                    value="client"
+                    checked={documentFor === 'client'}
+                    onChange={() => setDocumentFor('client')}
+                  />
+                  Client Document
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="documentFor"
+                    value="case"
+                    checked={documentFor === 'case'}
+                    onChange={() => setDocumentFor('case')}
+                  />
+                  Case Document
+                </label>
+              </div>
+            </div>
+          )}
+          
+          {!clientId && documentFor === 'client' && (
+            <div className="form-group">
+            <label htmlFor="caseSearch">Select Client *</label>
+            <div className="case-search-container">
+              <input
+                type="text"
+                id="caseSearch"
+                placeholder="Search for a client..."
+                value={clientSearchTerm}
+                onChange={(e) => setClientSearchTerm(e.target.value)}
+                className="case-search-input"
+              />
+              {clientSearchTerm && (
+                <div className="case-search-results">
+                  {clients
+                    .filter(c => 
+                      c.firstName.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                      c.lastName.toLowerCase().includes(clientSearchTerm.toLowerCase())
+                    )
+                    .slice(0, 5)
+                    .map(c => (
+                      <div 
+                        key={c.id} 
+                        className="case-search-item"
+                        onClick={() => {
+                          setSelectedClientId(c.id)
+                          setClientSearchTerm('')
+                        }}
+                      >
+                        {c.firstName}: {c.lastName}
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+            {selectedClientId && (
+              <div className="selected-case">
+                Selected: {clients.find(c => c.id === selectedClientId)?.firstName || 'Unknown Case'}
+              </div>
+            )}
+          </div>
+          )}
+          
+          {!clientId && documentFor === 'case' && (
+            <div className="form-group">
+            <label htmlFor="caseSearch">Select Case *</label>
+            <div className="case-search-container">
+              <input
+                type="text"
+                id="caseSearch"
+                placeholder="Search for a case..."
+                value={caseSearchTerm}
+                onChange={(e) => setCaseSearchTerm(e.target.value)}
+                className="case-search-input"
+              />
+              {caseSearchTerm && (
+                <div className="case-search-results">
+                  {cases
+                    .filter(c => 
+                      c.title.toLowerCase().includes(caseSearchTerm.toLowerCase()) ||
+                      c.caseNumber.toLowerCase().includes(caseSearchTerm.toLowerCase())
+                    )
+                    .slice(0, 5)
+                    .map(c => (
+                      <div 
+                        key={c.id} 
+                        className="case-search-item"
+                        onClick={() => {
+                          setSelectedCaseId(c.id)
+                          setCaseSearchTerm('')
+                        }}
+                      >
+                        {c.caseNumber}: {c.title}
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+            {selectedCaseId && (
+              <div className="selected-case">
+                Selected: {cases.find(c => c.id === selectedCaseId)?.title || 'Unknown Case'}
+              </div>
+            )}
+          </div>
+          )}
+          
           <div className="form-group">
             <label htmlFor="documentType">Document Type *</label>
             <select
@@ -190,21 +354,21 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({ isOpen, onClo
           {error && <div className="error-message">{error}</div>}
           
           <div className="modal-footer">
-            <button 
-              type="button" 
-              className="cancel-button" 
+            <Button 
+              variant="secondary"
               onClick={onClose}
               disabled={isUploading}
             >
               Cancel
-            </button>
-            <button 
+            </Button>
+            <Button 
+              variant="primary"
               type="submit" 
-              className="submit-button" 
               disabled={isUploading || !file}
+              loading={isUploading}
             >
               {isUploading ? 'Uploading...' : 'Upload'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

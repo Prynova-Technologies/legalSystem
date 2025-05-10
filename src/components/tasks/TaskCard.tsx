@@ -136,6 +136,17 @@ const TaskCard: React.FC<TaskCardProps> = ({
         :
         null)
       }
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        float: 'right',
+        fontSize: '0.7rem',
+        fontWeight: 500,
+        marginBottom: 5,
+      }}>
+          <span className="meta-label">Assigned By:</span>
+          <span className="meta-value">{assignedBy.firstName + " " + assignedBy.lastName}</span>
+        </div>
     </div>
   );
 };

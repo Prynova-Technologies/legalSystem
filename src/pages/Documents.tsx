@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchDocuments, setFilters, clearFilters } from '../store/slices/documentsSlice';
 import { DocumentCategory } from '../types';
+import { Button } from '../components/common';
+import { DocumentUploadModal, DocumentCard } from '../components/documents';
+import './Documents.css';
 
 const Documents: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { documents, isLoading, error, filters } = useSelector((state: RootState) => state.documents);
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchDocuments() as any);
@@ -30,32 +34,51 @@ const Documents: React.FC = () => {
   };
 
   // Filter documents based on current filters
-  const filteredDocuments = documents.filter(document => {
+  const filteredDocuments = documents.data?.filter(document => {
     // Search term filter
     if (filters.searchTerm && !(
-      document.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      document.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       (document.description && document.description.toLowerCase().includes(filters.searchTerm.toLowerCase()))
     )) {
       return false;
     }
 
     // Category filter
-    if (filters.category && document.category !== filters.category) {
+    if (filters.category && document.documentType !== filters.category) {
       return false;
     }
 
     // Case filter
-    if (filters.caseId && document.caseId !== filters.caseId) {
+    if (filters.caseId && document.case !== filters.caseId) {
       return false;
     }
 
     // Client filter
-    if (filters.clientId && document.clientId !== filters.clientId) {
+    if (filters.clientId && document.client !== filters.clientId) {
       return false;
     }
 
     return true;
   });
+  
+  // Prepare documents for DocumentCard component
+  const preparedDocuments = filteredDocuments?.map(doc => ({
+    ...doc,
+    // Ensure client and createdBy are in the expected format for DocumentCard
+    client: doc.client ? {
+      _id: typeof doc.client === 'string' ? doc.client : doc.client._id,
+      id: typeof doc.client === 'string' ? doc.client : doc.client._id,
+      firstName: typeof doc.client === 'object' ? doc.client.firstName : '',
+      lastName: typeof doc.client === 'object' ? doc.client.lastName : ''
+    } : undefined,
+    createdBy: {
+      _id: typeof doc.createdBy === 'string' ? doc.createdBy : doc.createdBy?._id || '',
+      id: typeof doc.createdBy === 'string' ? doc.createdBy : doc.createdBy?._id || '',
+      firstName: typeof doc.createdBy === 'object' ? doc.createdBy.firstName : '',
+      lastName: typeof doc.createdBy === 'object' ? doc.createdBy.lastName : '',
+      fullName: typeof doc.createdBy === 'object' ? `${doc.createdBy.firstName} ${doc.createdBy.lastName}` : ''
+    }
+  }));
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -73,16 +96,16 @@ const Documents: React.FC = () => {
   };
 
   const getDocumentIcon = (fileType: string) => {
-    const type = fileType.toLowerCase();
+    const type = fileType ?  fileType.toLowerCase() : '';
     if (type.includes('pdf')) {
       return '📄';
-    } else if (type.includes('doc') || type.includes('word')) {
+    } else if (type.includes('doc') || type.includes('word') || type.includes('csv') || type.includes('text')) {
       return '📝';
     } else if (type.includes('xls') || type.includes('sheet')) {
       return '📊';
     } else if (type.includes('ppt') || type.includes('presentation')) {
       return '📑';
-    } else if (type.includes('jpg') || type.includes('jpeg') || type.includes('png') || type.includes('gif')) {
+    } else if (type.includes('jpg') || type.includes('jpeg') || type.includes('png') || type.includes('gif') || type.includes('webp')) {
       return '🖼️';
     } else {
       return '📁';
@@ -93,10 +116,22 @@ const Documents: React.FC = () => {
     <div className="documents-container">
       <div className="page-header">
         <h1>Documents</h1>
-        <Link to="/documents/upload" className="btn btn-primary">
+        <Button 
+          variant="primary" 
+          onClick={() => setIsUploadModalOpen(true)}
+        >
           Upload Document
-        </Link>
+        </Button>
       </div>
+      
+      <DocumentUploadModal 
+        isOpen={isUploadModalOpen} 
+        onClose={() => setIsUploadModalOpen(false)} 
+        onUploadFinish={() => {
+          dispatch(fetchDocuments() as any);
+          setIsUploadModalOpen(false);
+        }} 
+      />
 
       <div className="filters-section">
         <form onSubmit={handleSearch} className="search-form">
@@ -134,35 +169,20 @@ const Documents: React.FC = () => {
         <div className="loading-indicator">Loading documents...</div>
       ) : error ? (
         <div className="error-message">{error}</div>
-      ) : filteredDocuments.length === 0 ? (
+      ) : preparedDocuments?.length === 0 ? (
         <div className="empty-state">
           <p>No documents found. Try adjusting your filters or upload a new document.</p>
         </div>
       ) : (
         <div className="documents-grid">
-          {filteredDocuments.map(document => (
-            <div key={document.id} className="document-card" onClick={() => navigate(`/documents/${document.id}`)}>
-              <div className="document-icon">{getDocumentIcon(document.fileType)}</div>
-              <div className="document-info">
-                <h3 className="document-name">{document.name}</h3>
-                {document.description && (
-                  <p className="document-description">{document.description}</p>
-                )}
-                <div className="document-meta">
-                  <span className="document-type">{document.fileType.toUpperCase()}</span>
-                  <span className="document-size">{formatFileSize(document.size)}</span>
-                </div>
-                <div className="document-meta">
-                  <span className="document-category">{document.category.replace('_', ' ')}</span>
-                  <span className="document-date">Uploaded: {formatDate(document.uploadedAt)}</span>
-                </div>
-              </div>
-              <div className="document-actions">
-                <a href={document.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm" onClick={(e) => e.stopPropagation()}>
-                  View
-                </a>
-              </div>
-            </div>
+          {preparedDocuments?.map(document => (
+            <DocumentCard
+              key={document.id || document._id}
+              document={document}
+              className="clickable-card"
+              onPreview={() => navigate(`/documents/${document.id || document._id}`)}
+              onDownload={() => window.open(document.versions[0].filePath, '_blank')}
+            />
           ))}
         </div>
       )}
