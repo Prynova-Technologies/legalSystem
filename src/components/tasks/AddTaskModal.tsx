@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Modal } from '../common';
-import { addCaseTaskAsync } from '../../store/slices/casesSlice';
+import { addCaseTaskAsync, fetchCases } from '../../store/slices/casesSlice';
 import { createTask } from '../../store/slices/tasksSlice';
 import FormStyles from '../forms/FormStyles.css'
+import { useLocation } from 'react-router-dom';
+import './TaskStyles.css';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -17,6 +19,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { users } = useSelector((state: RootState) => state.users);
+  const { cases } = useSelector((state: RootState) => state.cases);
+  const location = useLocation();
+  
+  // Check if we're on the Tasks page (no caseId provided)
+  const isTasksPage = !caseId && location.pathname.includes('/tasks');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -27,8 +34,12 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
     dueDate: '',
     estimatedHours: '',
     billable: true,
-    notes: ''
+    notes: '',
+    caseId: ''
   });
+  
+  // For case search functionality
+  const [caseSearchTerm, setCaseSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,8 +47,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
   useEffect(() => {
     if (!isOpen) {
       resetForm();
+    } else if (isTasksPage) {
+      // Fetch cases when modal is opened on Tasks page
+      dispatch(fetchCases() as any);
     }
-  }, [isOpen]);
+  }, [isOpen, isTasksPage, dispatch]);
 
   const resetForm = () => {
     setFormData({
@@ -49,8 +63,10 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
       dueDate: '',
       estimatedHours: '',
       billable: true,
-      notes: ''
+      notes: '',
+      caseId: ''
     });
+    setCaseSearchTerm('');
     setError(null);
   };
 
@@ -75,6 +91,20 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
       });
     }
   };
+  
+  // Handle case search input change
+  const handleCaseSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCaseSearchTerm(e.target.value);
+  };
+  
+  // Handle case selection
+  const handleCaseSelect = (caseId: string) => {
+    setFormData({
+      ...formData,
+      caseId
+    });
+    setCaseSearchTerm('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +128,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
       setError('Due date is required');
       return;
     }
+    
+    if (isTasksPage && !formData.caseId) {
+      setError('Please select a case for this task');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -107,6 +142,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
         title: formData.title,
         description: formData.description,
         ...(caseId ? { caseId } : {}),
+        ...(isTasksPage && formData.caseId ? { caseId: formData.caseId } : {}),
         assignedTo: formData.assignedTo,
         assignedBy: user?.data?._id || '',
         priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
@@ -119,6 +155,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
 
       if (caseId) {
         await dispatch(addCaseTaskAsync({ caseId, taskData }) as any);
+      } else if (isTasksPage && formData.caseId) {
+        await dispatch(addCaseTaskAsync({ caseId: formData.caseId, taskData }) as any);
       } else {
         await dispatch(createTask(taskData) as any);
       }
@@ -168,6 +206,47 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, caseId, on
     >
       <form className="form-container">
         {error && <div className="error-message">{error}</div>}
+        
+        {isTasksPage && (
+          <div className="form-group">
+            <label htmlFor="caseSearch">Select Case *</label>
+            <div className="case-search-container">
+              <input
+                type="text"
+                id="caseSearch"
+                placeholder="Search for a case..."
+                value={caseSearchTerm}
+                onChange={handleCaseSearchChange}
+                className="case-search-input"
+              />
+              {caseSearchTerm && (
+                <div className="case-search-results">
+                  {cases
+                    .filter(c => 
+                      c.title.toLowerCase().includes(caseSearchTerm.toLowerCase()) ||
+                      c.caseNumber.toLowerCase().includes(caseSearchTerm.toLowerCase())
+                    )
+                    .slice(0, 5)
+                    .map(c => (
+                      <div 
+                        key={c.id} 
+                        className="case-search-item"
+                        onClick={() => handleCaseSelect(c.id)}
+                      >
+                        {c.caseNumber}: {c.title}
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+            {formData.caseId && (
+              <div className="selected-case">
+                Selected: {cases.find(c => c.id === formData.caseId)?.title || 'Unknown Case'}
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="form-group">
           <label htmlFor="title">Title *</label>
