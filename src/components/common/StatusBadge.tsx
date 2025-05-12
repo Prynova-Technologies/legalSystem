@@ -15,6 +15,8 @@ type StatusType =
   | 'sent'
   | 'high'
   | 'medium'
+  | 'yes'
+  | 'no'
   | 'low';
 
 interface StatusBadgeProps {

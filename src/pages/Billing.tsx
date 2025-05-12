@@ -7,6 +7,7 @@ import { Tabs, DataTable, Button, StatusBadge } from '../components/common';
 import * as FaIcons from 'react-icons/fa';
 import '../components/common/CommonStyles.css';
 import TimeEntryModal from '../components/billing/TimeEntryModal';
+import TimeEntryDetailsModal from '../components/billing/TimeEntryDetailsModal';
 import ExpenseModal from '../components/billing/ExpenseModal';
 import InvoiceModal from '../components/billing/InvoiceModal';
 
@@ -17,6 +18,7 @@ const Billing: React.FC = () => {
   );
   const [activeTab, setActiveTab] = useState('time-entries');
   const [isTimeEntryModalOpen, setIsTimeEntryModalOpen] = useState(false);
+  const [isTimeEntryDetailsModalOpen, setIsTimeEntryDetailsModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -70,7 +72,7 @@ const Billing: React.FC = () => {
         <div className="detail-header">
           <h2 className="detail-title">Time Entries</h2>
           <Button 
-            variant="primary" 
+            variant="outline" 
             onClick={() => setIsTimeEntryModalOpen(true)}
           >
             <FaIcons.FaPlus /> New Time Entry
@@ -79,43 +81,30 @@ const Billing: React.FC = () => {
 
         <DataTable
           columns={[
-            { header: 'Date', accessor: row => formatDate(row.date) },
+            { header: 'Date', accessor: row => formatDate(row.createdAt) },
             { header: 'Description', accessor: 'description' },
             { header: 'Duration', accessor: row => formatDuration(row.duration) },
             { 
-              header: 'Case', 
+              header: 'Task', 
               accessor: row => (
-                row.caseId ? (
-                  <Link to={`/cases/${row.caseId}`}>View Case</Link>
+                row.task._id ? (
+                  <Link to={`/cases/${row.task._id}`}>View task</Link>
                 ) : 'N/A'
               )
             },
             { 
               header: 'Billable', 
               accessor: row => (
-                <StatusBadge status={row.billable ? 'Verified' : 'Unverified'} />
+                <StatusBadge status={row.billable ? 'yes' : 'no'} />
               )
             },
-            { 
-              header: 'Actions', 
-              accessor: row => (
-                <Button 
-                  variant="secondary" 
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedItem(row);
-                    setIsTimeEntryModalOpen(true);
-                  }}
-                >
-                  <FaIcons.FaEdit /> Edit
-                </Button>
-              )
-            }
           ]}
           data={timeEntries}
           emptyMessage="No time entries recorded. Start tracking your time by creating a new entry."
-          onRowClick={entry => navigate(`/billing/time-entry/${entry.id}`)}
+          onRowClick={(entry) => {
+            setSelectedItem(entry);
+            setIsTimeEntryDetailsModalOpen(true);
+          }}
           pagination={true}
           pageSize={10}
           striped={true}
@@ -176,7 +165,10 @@ const Billing: React.FC = () => {
           ]}
           data={expenses}
           emptyMessage="No expenses recorded. Add your first expense by clicking the button above."
-          onRowClick={expense => navigate(`/billing/expense/${expense.id}`)}
+          onRowClick={(expense) => {
+            setSelectedItem(expense);
+            setIsExpenseModalOpen(true);
+          }}
           pagination={true}
           pageSize={10}
           striped={true}
@@ -235,7 +227,10 @@ const Billing: React.FC = () => {
           ]}
           data={invoices}
           emptyMessage="No invoices created. Generate your first invoice by clicking the button above."
-          onRowClick={invoice => navigate(`/billing/invoice/${invoice.id}`)}
+          onRowClick={(invoice) => {
+            setSelectedItem(invoice);
+            setIsInvoiceModalOpen(true);
+          }}
           pagination={true}
           pageSize={10}
           striped={true}
@@ -361,6 +356,19 @@ const Billing: React.FC = () => {
         }}
         timeEntry={selectedItem}
         onSuccess={() => dispatch(fetchTimeEntries() as any)}
+      />
+      
+      <TimeEntryDetailsModal
+        isOpen={isTimeEntryDetailsModalOpen}
+        onClose={() => {
+          setIsTimeEntryDetailsModalOpen(false);
+          setSelectedItem(null);
+        }}
+        timeEntry={selectedItem}
+        onEdit={() => {
+          setIsTimeEntryDetailsModalOpen(false);
+          setIsTimeEntryModalOpen(true);
+        }}
       />
       
       <ExpenseModal

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { TimeEntry, Expense, Invoice } from '../../types';
-import { v4 as uuidv4 } from 'uuid';
+import { billingService } from '../../services/billingService';
 
 interface BillingState {
   timeEntries: TimeEntry[];
@@ -41,46 +41,10 @@ const initialState: BillingState = {
 };
 
 // Time Entries
-export const fetchTimeEntries = createAsyncThunk('billing/fetchTimeEntries', async (_, { rejectWithValue }) => {
+export const fetchTimeEntries = createAsyncThunk('billing/fetchTimeEntries', async (filters: Record<string, any> = {}, { rejectWithValue }) => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock data
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    const mockTimeEntries: TimeEntry[] = [
-      {
-        id: '1',
-        caseId: '1',
-        userId: '2',
-        description: 'Initial case review and research',
-        date: yesterday.toISOString(),
-        duration: 120, // 2 hours in minutes
-        billable: true,
-        billed: false,
-        rate: 250,
-        createdAt: yesterday.toISOString(),
-        updatedAt: yesterday.toISOString(),
-      },
-      {
-        id: '2',
-        caseId: '1',
-        userId: '2',
-        description: 'Drafting complaint',
-        date: today.toISOString(),
-        duration: 180, // 3 hours in minutes
-        billable: true,
-        billed: false,
-        rate: 250,
-        createdAt: today.toISOString(),
-        updatedAt: today.toISOString(),
-      },
-    ];
-    
-    return mockTimeEntries;
+    const timeEntries = await billingService.getAllTimeEntries(filters);
+    return timeEntries;
   } catch (error) {
     return rejectWithValue('Failed to fetch time entries');
   }
@@ -90,24 +54,7 @@ export const createTimeEntry = createAsyncThunk(
   'billing/createTimeEntry',
   async (timeEntryData: Partial<TimeEntry>, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const now = new Date().toISOString();
-      const newTimeEntry: TimeEntry = {
-        id: uuidv4(),
-        caseId: timeEntryData.caseId || '',
-        userId: timeEntryData.userId || '',
-        description: timeEntryData.description || '',
-        date: timeEntryData.date || now,
-        duration: timeEntryData.duration || 0,
-        billable: timeEntryData.billable !== undefined ? timeEntryData.billable : true,
-        billed: false,
-        rate: timeEntryData.rate || 0,
-        createdAt: now,
-        updatedAt: now,
-      };
-      
+      const newTimeEntry = await billingService.createTimeEntry(timeEntryData);
       return newTimeEntry;
     } catch (error) {
       return rejectWithValue('Failed to create time entry');
@@ -117,25 +64,9 @@ export const createTimeEntry = createAsyncThunk(
 
 export const updateTimeEntry = createAsyncThunk(
   'billing/updateTimeEntry',
-  async ({ timeEntryId, timeEntryData }: { timeEntryId: string; timeEntryData: Partial<TimeEntry> }, { rejectWithValue, getState }) => {
+  async ({ timeEntryId, timeEntryData }: { timeEntryId: string; timeEntryData: Partial<TimeEntry> }, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const state = getState() as { billing: BillingState };
-      const existingTimeEntry = state.billing.timeEntries.find(t => t.id === timeEntryId);
-      
-      if (!existingTimeEntry) {
-        return rejectWithValue('Time entry not found');
-      }
-      
-      const now = new Date().toISOString();
-      const updatedTimeEntry: TimeEntry = {
-        ...existingTimeEntry,
-        ...timeEntryData,
-        updatedAt: now,
-      };
-      
+      const updatedTimeEntry = await billingService.updateTimeEntry(timeEntryId, timeEntryData);
       return updatedTimeEntry;
     } catch (error) {
       return rejectWithValue('Failed to update time entry');
@@ -147,9 +78,7 @@ export const deleteTimeEntry = createAsyncThunk(
   'billing/deleteTimeEntry',
   async (timeEntryId: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await billingService.deleteTimeEntry(timeEntryId);
       return timeEntryId;
     } catch (error) {
       return rejectWithValue('Failed to delete time entry');
@@ -158,51 +87,10 @@ export const deleteTimeEntry = createAsyncThunk(
 );
 
 // Expenses
-export const fetchExpenses = createAsyncThunk('billing/fetchExpenses', async (_, { rejectWithValue }) => {
+export const fetchExpenses = createAsyncThunk('billing/fetchExpenses', async (filters: Record<string, any> = {}, { rejectWithValue }) => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock data
-    const today = new Date();
-    const lastWeek = new Date(today);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    
-    const mockExpenses: Expense[] = [
-      {
-        id: '1',
-        caseId: '1',
-        userId: '2',
-        description: 'Court filing fees',
-        date: lastWeek.toISOString(),
-        amount: 350,
-        receiptUrl: 'https://example.com/receipts/filing-fee.pdf',
-        billable: true,
-        billed: false,
-        reimbursable: false,
-        category: 'filing_fee',
-        createdBy: '2',
-        createdAt: lastWeek.toISOString(),
-        updatedAt: lastWeek.toISOString(),
-      },
-      {
-        id: '2',
-        caseId: '1',
-        userId: '2',
-        description: 'Travel expenses for client meeting',
-        date: today.toISOString(),
-        amount: 75.50,
-        billable: true,
-        billed: false,
-        reimbursable: true,
-        category: 'travel',
-        createdBy: '2',
-        createdAt: today.toISOString(),
-        updatedAt: today.toISOString(),
-      },
-    ];
-    
-    return mockExpenses;
+    const expenses = await billingService.getAllExpenses(filters);
+    return expenses;
   } catch (error) {
     return rejectWithValue('Failed to fetch expenses');
   }
@@ -212,27 +100,7 @@ export const createExpense = createAsyncThunk(
   'billing/createExpense',
   async (expenseData: Partial<Expense>, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const now = new Date().toISOString();
-      const newExpense: Expense = {
-        id: uuidv4(),
-        caseId: expenseData.caseId || '',
-        userId: expenseData.userId || '',
-        description: expenseData.description || '',
-        date: expenseData.date || now,
-        amount: expenseData.amount || 0,
-        receiptUrl: expenseData.receiptUrl,
-        billable: expenseData.billable !== undefined ? expenseData.billable : true,
-        billed: false,
-        reimbursable: expenseData.reimbursable !== undefined ? expenseData.reimbursable : false,
-        category: expenseData.category || 'other',
-        createdBy: expenseData.userId || '',
-        createdAt: now,
-        updatedAt: now,
-      };
-      
+      const newExpense = await billingService.createExpense(expenseData);
       return newExpense;
     } catch (error) {
       return rejectWithValue('Failed to create expense');
@@ -242,25 +110,9 @@ export const createExpense = createAsyncThunk(
 
 export const updateExpense = createAsyncThunk(
   'billing/updateExpense',
-  async ({ expenseId, expenseData }: { expenseId: string; expenseData: Partial<Expense> }, { rejectWithValue, getState }) => {
+  async ({ expenseId, expenseData }: { expenseId: string; expenseData: Partial<Expense> }, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const state = getState() as { billing: BillingState };
-      const existingExpense = state.billing.expenses.find(e => e.id === expenseId);
-      
-      if (!existingExpense) {
-        return rejectWithValue('Expense not found');
-      }
-      
-      const now = new Date().toISOString();
-      const updatedExpense: Expense = {
-        ...existingExpense,
-        ...expenseData,
-        updatedAt: now,
-      };
-      
+      const updatedExpense = await billingService.updateExpense(expenseId, expenseData);
       return updatedExpense;
     } catch (error) {
       return rejectWithValue('Failed to update expense');
@@ -272,9 +124,7 @@ export const deleteExpense = createAsyncThunk(
   'billing/deleteExpense',
   async (expenseId: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await billingService.deleteExpense(expenseId);
       return expenseId;
     } catch (error) {
       return rejectWithValue('Failed to delete expense');
@@ -283,49 +133,10 @@ export const deleteExpense = createAsyncThunk(
 );
 
 // Invoices
-export const fetchInvoices = createAsyncThunk('billing/fetchInvoices', async (_, { rejectWithValue }) => {
+export const fetchInvoices = createAsyncThunk('billing/fetchInvoices', async (filters: Record<string, any> = {}, { rejectWithValue }) => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock data
-    const today = new Date();
-    const lastMonth = new Date(today);
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
-    const mockInvoices: Invoice[] = [
-      {
-        id: '1',
-        invoiceNumber: 'INV-2023-001',
-        clientId: '1',
-        caseId: '1',
-        issueDate: lastMonth.toISOString(),
-        dueDate: new Date(lastMonth.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days after issue
-        status: 'paid',
-        items: [
-          {
-            id: 'item1',
-            description: 'Legal services',
-            quantity: 10,
-            rate: 250,
-            amount: 2500,
-            type: 'time',
-            timeEntryId: '1'
-          }
-        ],
-        subtotal: 2500,
-        tax: 200,
-        total: 2700,
-        timeEntries: ['1'],
-        expenses: ['1'],
-        notes: 'Initial retainer and filing fees',
-        paymentDate: new Date(lastMonth.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days after issue
-        createdAt: lastMonth.toISOString(),
-        updatedAt: lastMonth.toISOString(),
-      },
-    ];
-    
-    return mockInvoices;
+    const invoices = await billingService.getAllInvoices(filters);
+    return invoices;
   } catch (error) {
     return rejectWithValue('Failed to fetch invoices');
   }
@@ -335,32 +146,7 @@ export const createInvoice = createAsyncThunk(
   'billing/createInvoice',
   async (invoiceData: Partial<Invoice>, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const now = new Date().toISOString();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 30); // Default due date: 30 days from now
-      
-      const newInvoice: Invoice = {
-        id: uuidv4(),
-        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        clientId: invoiceData.clientId || '',
-        caseId: invoiceData.caseId || '',
-        issueDate: invoiceData.issueDate || now,
-        dueDate: invoiceData.dueDate || dueDate.toISOString(),
-        status: 'draft',
-        items: invoiceData.items || [],
-        subtotal: invoiceData.subtotal || 0,
-        tax: invoiceData.tax || 0,
-        total: invoiceData.total || 0,
-        timeEntries: invoiceData.timeEntries || [],
-        expenses: invoiceData.expenses || [],
-        notes: invoiceData.notes || '',
-        createdAt: now,
-        updatedAt: now,
-      };
-      
+      const newInvoice = await billingService.createInvoice(invoiceData);
       return newInvoice;
     } catch (error) {
       return rejectWithValue('Failed to create invoice');
@@ -370,25 +156,9 @@ export const createInvoice = createAsyncThunk(
 
 export const updateInvoice = createAsyncThunk(
   'billing/updateInvoice',
-  async ({ invoiceId, invoiceData }: { invoiceId: string; invoiceData: Partial<Invoice> }, { rejectWithValue, getState }) => {
+  async ({ invoiceId, invoiceData }: { invoiceId: string; invoiceData: Partial<Invoice> }, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const state = getState() as { billing: BillingState };
-      const existingInvoice = state.billing.invoices.find(i => i.id === invoiceId);
-      
-      if (!existingInvoice) {
-        return rejectWithValue('Invoice not found');
-      }
-      
-      const now = new Date().toISOString();
-      const updatedInvoice: Invoice = {
-        ...existingInvoice,
-        ...invoiceData,
-        updatedAt: now,
-      };
-      
+      const updatedInvoice = await billingService.updateInvoice(invoiceId, invoiceData);
       return updatedInvoice;
     } catch (error) {
       return rejectWithValue('Failed to update invoice');
@@ -400,9 +170,7 @@ export const deleteInvoice = createAsyncThunk(
   'billing/deleteInvoice',
   async (invoiceId: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await billingService.deleteInvoice(invoiceId);
       return invoiceId;
     } catch (error) {
       return rejectWithValue('Failed to delete invoice');
@@ -412,26 +180,9 @@ export const deleteInvoice = createAsyncThunk(
 
 export const markInvoiceAsPaid = createAsyncThunk(
   'billing/markInvoiceAsPaid',
-  async ({ invoiceId, paymentDate }: { invoiceId: string; paymentDate?: string }, { rejectWithValue, getState }) => {
+  async ({ invoiceId, paymentDate }: { invoiceId: string; paymentDate?: string }, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const state = getState() as { billing: BillingState };
-      const existingInvoice = state.billing.invoices.find(i => i.id === invoiceId);
-      
-      if (!existingInvoice) {
-        return rejectWithValue('Invoice not found');
-      }
-      
-      const now = new Date().toISOString();
-      const updatedInvoice: Invoice = {
-        ...existingInvoice,
-        status: 'paid',
-        paymentDate: paymentDate || now,
-        updatedAt: now,
-      };
-      
+      const updatedInvoice = await billingService.markInvoiceAsPaid(invoiceId, { paymentDate });
       return updatedInvoice;
     } catch (error) {
       return rejectWithValue('Failed to mark invoice as paid');

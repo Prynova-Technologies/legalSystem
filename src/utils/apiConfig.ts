@@ -43,16 +43,26 @@ const API_ENDPOINTS = {
     DETAIL: (id: string) => `${API_BASE_URL}/tasks/${id}`,
   },
   
-  // Time entries endpoints
-  TIME_ENTRIES: {
-    BASE: `${API_BASE_URL}/time-entries`,
-    DETAIL: (id: string) => `${API_BASE_URL}/time-entries/${id}`,
+  // Billing endpoints
+  BILLING: {
+    TIME_ENTRIES: `${API_BASE_URL}/billing/time-entries`,
+    TIME_ENTRY_DETAIL: (id: string) => `${API_BASE_URL}/billing/time-entries/${id}`,
+    EXPENSES: `${API_BASE_URL}/billing/expenses`,
+    EXPENSE_DETAIL: (id: string) => `${API_BASE_URL}/billing/expenses/${id}`,
+    INVOICES: `${API_BASE_URL}/invoices`,
+    INVOICE_DETAIL: (id: string) => `${API_BASE_URL}/billing/invoices/${id}`,
   },
   
-  // Invoices endpoints
+  // Time entries endpoints (legacy - use BILLING.TIME_ENTRIES instead)
+  TIME_ENTRIES: {
+    BASE: `${API_BASE_URL}/billing/time-entries`,
+    DETAIL: (id: string) => `${API_BASE_URL}/billing/time-entries/${id}`,
+  },
+  
+  // Invoices endpoints (legacy - use BILLING.INVOICES instead)
   INVOICES: {
-    BASE: `${API_BASE_URL}/invoices`,
-    DETAIL: (id: string) => `${API_BASE_URL}/invoices/${id}`,
+    BASE: `${API_BASE_URL}/billing/invoices`,
+    DETAIL: (id: string) => `${API_BASE_URL}/billing/invoices/${id}`,
   },
   
   // Documents endpoints

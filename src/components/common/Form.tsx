@@ -5,12 +5,15 @@ import './CommonStyles.css';
 export type FormField = {
   id: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'date' | 'checkbox' | 'number' | 'multiselect';
+  type: 'text' | 'textarea' | 'select' | 'date' | 'datetime-local' | 'checkbox' | 'number' | 'multiselect' | 'tags';
   placeholder?: string;
   required?: boolean;
   options?: { value: string; label: string }[];
   validation?: (value: any) => string | null;
   multiple?: boolean;
+  disabled?: boolean;
+  defaultValue?: any;
+  conditional?: { field: string; value: any };
 };
 
 export type FormSection = {
@@ -119,7 +122,13 @@ const DataForm: React.FC<DataFormProps> = ({
   };
 
   const renderField = (field: FormField) => {
-    const { id, label, type, placeholder, required, options } = field;
+    const { id, label, type, placeholder, required, options, disabled, conditional } = field;
+    
+    // Check if this field should be conditionally shown
+    if (conditional && formData[conditional.field] !== conditional.value) {
+      return null;
+    }
+    
     const value = formData[id];
     const error = errors[id];
     
@@ -167,13 +176,14 @@ const DataForm: React.FC<DataFormProps> = ({
         
       case 'checkbox':
         return (
-          <div className="form-group checkbox-group" key={id} id={`${id}-group`}>
+          <div className="checkbox-group" key={id} id={`${id}-group`}>
             <label className="form-checkbox-label">
               <input
                 type="checkbox"
-                checked={!!value}
+                checked={value === undefined ? !!field.defaultValue : !!value}
                 onChange={(e) => handleChange(id, e.target.checked)}
                 className="form-checkbox"
+                disabled={disabled}
               />
               {label}
             </label>
@@ -192,6 +202,24 @@ const DataForm: React.FC<DataFormProps> = ({
               onChange={(e) => handleChange(id, e.target.value)}
               className={`form-input ${error ? 'form-input-error' : ''}`}
               required={required}
+              disabled={disabled}
+            />
+            {error && <div className="form-error">{error}</div>}
+          </div>
+        );
+        
+      case 'datetime-local':
+        return (
+          <div className="form-group" key={id} id={`${id}-group`}>
+            <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
+            <input
+              type="datetime-local"
+              id={id}
+              value={value}
+              onChange={(e) => handleChange(id, e.target.value)}
+              className={`form-input ${error ? 'form-input-error' : ''}`}
+              required={required}
+              disabled={disabled}
             />
             {error && <div className="form-error">{error}</div>}
           </div>
@@ -209,7 +237,54 @@ const DataForm: React.FC<DataFormProps> = ({
               placeholder={placeholder}
               className={`form-input ${error ? 'form-input-error' : ''}`}
               required={required}
+              disabled={disabled}
             />
+            {error && <div className="form-error">{error}</div>}
+          </div>
+        );
+        
+      case 'tags':
+        return (
+          <div className="form-group" key={id} id={`${id}-group`}>
+            <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
+            <div className="tags-input-container">
+              <input
+                type="text"
+                id={`${id}-input`}
+                placeholder={placeholder || 'Type and press Enter to add'}
+                className={`form-input ${error ? 'form-input-error' : ''}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    e.preventDefault();
+                    const newTag = e.currentTarget.value.trim();
+                    const currentTags = Array.isArray(value) ? value : value ? value.split(',') : [];
+                    if (!currentTags.includes(newTag)) {
+                      handleChange(id, [...currentTags, newTag]);
+                    }
+                    e.currentTarget.value = '';
+                  }
+                }}
+                disabled={disabled}
+              />
+              <div className="tags-container">
+                {(Array.isArray(value) ? value : value ? value.split(',') : []).map((tag, i) => (
+                  <div key={i} className="tag">
+                    {tag}
+                    <button 
+                      type="button" 
+                      className="tag-remove" 
+                      onClick={() => {
+                        const currentTags = Array.isArray(value) ? value : value.split(',');
+                        handleChange(id, currentTags.filter((_, index) => index !== i));
+                      }}
+                      disabled={disabled}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
             {error && <div className="form-error">{error}</div>}
           </div>
         );
@@ -227,6 +302,7 @@ const DataForm: React.FC<DataFormProps> = ({
               placeholder={placeholder}
               className={`form-input ${error ? 'form-input-error' : ''}`}
               required={required}
+              disabled={disabled}
             />
             {error && <div className="form-error">{error}</div>}
           </div>
