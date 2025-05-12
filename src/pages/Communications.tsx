@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { fetchMessages, setFilters, clearFilters } from '../store/slices/communicationsSlice';
 import { Tabs, DataTable, Button, StatusBadge } from '../components/common';
+import ChatComponent from '../components/communications/ChatComponent';
+import InternalChat from '../components/communications/InternalChat';
 import * as FaIcons from 'react-icons/fa';
 import '../components/common/CommonStyles.css';
 
@@ -36,6 +38,10 @@ const Communications: React.FC = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    // Mark messages as read when viewing internal messages tab
+    if (tab === 'internal_note') {
+      // In a real application, you would dispatch an action to update the messages in the backend
+    }
   };
 
   // Filter communications based on current filters and active tab
@@ -107,6 +113,15 @@ const Communications: React.FC = () => {
         return '📄';
     }
   };
+
+  const renderInternalMessagesTab = () => (
+    <div className="communications-section detail-container">
+      <div className="detail-header">
+        <h2 className="detail-title">Team Messages</h2>
+      </div>
+      <InternalChat onNewMessage={() => dispatch(fetchMessages() as any)} />
+    </div>
+  );
 
   const renderEmailTab = () => (
     <div className="communications-section detail-container">
@@ -388,7 +403,8 @@ const Communications: React.FC = () => {
               { id: 'all', label: 'All', icon: <FaIcons.FaInbox /> },
               { id: 'email', label: 'Emails', icon: <FaIcons.FaEnvelope /> },
               { id: 'sms', label: 'SMS', icon: <FaIcons.FaSms /> },
-              { id: 'internal_note', label: 'Internal Notes', icon: <FaIcons.FaStickyNote /> }
+              { id: 'internal_note', label: 'Internal Notes', icon: <FaIcons.FaStickyNote /> },
+              { id: 'chat', label: 'Chat', icon: <FaIcons.FaComments /> }
             ]}
             activeTab={activeTab}
             onTabChange={handleTabChange}
@@ -457,7 +473,23 @@ const Communications: React.FC = () => {
             )}
             {activeTab === 'email' && renderEmailTab()}
             {activeTab === 'sms' && renderMessagesTab()}
-            {activeTab === 'internal_note' && renderMeetingsTab()}
+            {activeTab === 'call' && renderCallsTab()}
+            {activeTab === 'message' && renderMessagesTab()}
+            {activeTab === 'meeting' && renderMeetingsTab()}
+            {activeTab === 'internal_note' && renderInternalMessagesTab()}
+            {activeTab === 'chat' && (
+              <div className="communications-section detail-container">
+                <div className="detail-header">
+                  <h2 className="detail-title">Internal Chat</h2>
+                </div>
+                <ChatComponent 
+                  onNewMessage={() => {
+                    // Refresh messages when a new message is sent or received
+                    dispatch(fetchMessages() as any);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </>
       )}

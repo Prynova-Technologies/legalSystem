@@ -25,24 +25,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       title: 'Invoice Details',
       fields: [
         {
-          id: 'invoiceNumber',
-          label: 'Invoice Number',
-          type: 'text',
-          required: true,
-          placeholder: 'Enter invoice number'
-        },
-        {
           id: 'clientId',
           label: 'Client',
           type: 'select',
           required: true,
           options: [] // This should be populated with actual client data
-        },
-        {
-          id: 'issueDate',
-          label: 'Issue Date',
-          type: 'date',
-          required: true
         },
         {
           id: 'dueDate',
