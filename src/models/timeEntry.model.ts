@@ -38,10 +38,12 @@ const timeEntrySchema = new Schema(
     billingRate: {
       type: Number,
       min: 0,
+      required: false
     },
     billableAmount: {
       type: Number,
       min: 0,
+      required: false
     },
     invoiced: {
       type: Boolean,
@@ -50,6 +52,7 @@ const timeEntrySchema = new Schema(
     invoice: {
       type: Schema.Types.ObjectId,
       ref: 'Invoice',
+      required: false
     },
     notes: String,
     tags: [String],
