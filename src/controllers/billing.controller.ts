@@ -315,3 +315,37 @@ export const createExpense = async (req: Request, res: Response): Promise<void> 
     });
   }
 };
+
+/**
+ * Update expense
+ * @route PATCH /api/billing/expenses/:id
+ * @access Private - Admin, Lawyer, Paralegal
+ */
+export const updateExpense = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const expense = await BillingService.updateExpense(id, req.body, (req.user as any)?._id);
+    
+    res.status(200).json({
+      success: true,
+      data: expense
+    });
+  } catch (error: any) {
+    if (error.message === 'Expense not found') {
+      res.status(404).json({
+        success: false,
+        error: 'Expense not found'
+      });
+    } else if (error.message === 'Cannot update an invoiced expense') {
+      res.status(400).json({
+        success: false,
+        error: 'Cannot update an invoiced expense'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Server Error'
+      });
+    }
+  }
+};

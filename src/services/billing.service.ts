@@ -1,6 +1,8 @@
 import Invoice from '../models/invoice.model';
 import TimeEntry from '../models/timeEntry.model';
+import Expense from '../models/expense.model';
 import { InvoiceStatus, PaymentMethod } from '../interfaces/billing.interface';
+import { ExpenseStatus } from '../interfaces/expense.interface';
 import logger from '../utils/logger';
 
 /**
@@ -113,6 +115,14 @@ export class BillingService {
         );
       }
       
+      // If expenses are included, mark them as invoiced
+      if (invoiceData.expenseIds && invoiceData.expenseIds.length > 0) {
+        await Expense.updateMany(
+          { _id: { $in: invoiceData.expenseIds } },
+          { invoiced: true, invoice: invoice._id, status: ExpenseStatus.BILLED }
+        );
+      }
+      
       return invoice;
     } catch (error) {
       logger.error('Error creating invoice', { error, invoiceData });
@@ -192,6 +202,12 @@ export class BillingService {
       await TimeEntry.updateMany(
         { invoice: id },
         { invoiced: false, $unset: { invoice: 1 } }
+      );
+      
+      // Update any expenses to mark them as not invoiced
+      await Expense.updateMany(
+        { invoice: id },
+        { invoiced: false, status: ExpenseStatus.APPROVED, $unset: { invoice: 1 } }
       );
       
       return true;
@@ -407,12 +423,33 @@ export class BillingService {
 
   /**
    * Get all expenses
-   * Note: This is a placeholder as the expense model doesn't exist yet
    */
   static async getAllExpenses(filters: any = {}, userId?: string): Promise<any[]> {
     try {
-      // This would fetch from a database if the Expense model existed
-      return [];
+      const filter: any = { isDeleted: false, ...filters };
+      
+      // Handle date range filters
+      if (filter.startAfter) {
+        filter.date = { $gte: new Date(filter.startAfter) };
+        delete filter.startAfter;
+      }
+      
+      if (filter.startBefore) {
+        filter.date = filter.date || {};
+        filter.date.$lte = new Date(filter.startBefore);
+        delete filter.startBefore;
+      }
+      
+      // If userId is provided, filter by submittedBy
+      if (userId && !filter.submittedBy) {
+        filter.submittedBy = userId;
+      }
+      
+      return await Expense.find(filter)
+        .populate('submittedBy', 'firstName lastName')
+        .populate('case', 'caseNumber title')
+        .populate('approvedBy', 'firstName lastName company')
+        .sort({ date: -1 });
     } catch (error) {
       logger.error('Error fetching expenses', { error, filters });
       throw error;
@@ -421,14 +458,124 @@ export class BillingService {
 
   /**
    * Create expense
-   * Note: This is a placeholder as the expense model doesn't exist yet
    */
   static async createExpense(expenseData: any, userId: string): Promise<any> {
     try {
-      // This would create in a database if the Expense model existed
-      return expenseData;
+      // Ensure submittedBy is set to the current user
+      if (!expenseData.submittedBy) {
+        expenseData.submittedBy = userId;
+      }
+      
+      // Calculate billable amount if billable and not already set
+      if (expenseData.billable && !expenseData.billableAmount) {
+        const markupPercentage = expenseData.markupPercentage || 0;
+        expenseData.billableAmount = parseFloat((expenseData.amount * (1 + markupPercentage / 100)).toFixed(2));
+        delete expenseData.markupPercentage; // Remove temporary field
+      }
+      
+      // Create expense
+      const expense = await Expense.create(expenseData);
+      
+      return expense;
     } catch (error) {
       logger.error('Error creating expense', { error, expenseData });
+      throw error;
+    }
+  }
+
+  /**
+   * Update expense
+   */
+  static async updateExpense(id: string, updateData: any, userId: string): Promise<any> {
+    try {
+      const expense = await Expense.findOne({ _id: id, isDeleted: false });
+      
+      if (!expense) {
+        throw new Error('Expense not found');
+      }
+      
+      // Don't allow updating if expense is already billed/invoiced
+      if (expense.invoiced) {
+        throw new Error('Cannot update an invoiced expense');
+      }
+      
+      // Set approvedBy field if expense is being approved
+      if (updateData.isApproved === true && !expense.isApproved) {
+        updateData.approvedBy = userId;
+      }
+      
+      // Recalculate billable amount if amount or billable status changed
+      if (updateData.billable !== undefined || updateData.amount !== undefined) {
+        const isBillable = updateData.billable !== undefined ? updateData.billable : expense.billable;
+        const amount = updateData.amount !== undefined ? updateData.amount : expense.amount;
+        
+        if (isBillable) {
+          const markupPercentage = updateData.markupPercentage || 0;
+          updateData.billableAmount = parseFloat((amount * (1 + markupPercentage / 100)).toFixed(2));
+          delete updateData.markupPercentage; // Remove temporary field
+        } else {
+          updateData.billableAmount = 0;
+        }
+      }
+      
+      // Update expense
+      const updatedExpense = await Expense.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+      }).populate('submittedBy', 'firstName lastName')
+        .populate('approvedBy', 'firstName lastName')
+        .populate('case', 'caseNumber title')
+      
+      return updatedExpense;
+    } catch (error) {
+      logger.error('Error updating expense', { error, id, updateData });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete expense (soft delete)
+   */
+  static async deleteExpense(id: string, userId: string): Promise<boolean> {
+    try {
+      const expense = await Expense.findOne({ _id: id, isDeleted: false });
+      
+      if (!expense) {
+        throw new Error('Expense not found');
+      }
+      
+      // Don't allow deleting if expense is already billed/invoiced
+      if (expense.invoiced) {
+        throw new Error('Cannot delete an invoiced expense');
+      }
+      
+      // Soft delete
+      await Expense.findByIdAndUpdate(id, { isDeleted: true });
+      
+      return true;
+    } catch (error) {
+      logger.error('Error deleting expense', { error, id });
+      throw error;
+    }
+  }
+
+  /**
+   * Get expense by ID
+   */
+  static async getExpenseById(id: string, userId?: string): Promise<any> {
+    try {
+      const expense = await Expense.findOne({ _id: id, isDeleted: false })
+        .populate('submittedBy', 'firstName lastName')
+        .populate('approvedBy', 'firstName lastName')
+        .populate('case', 'caseNumber title')
+      
+      if (!expense) {
+        throw new Error('Expense not found');
+      }
+      
+      return expense;
+    } catch (error) {
+      logger.error('Error fetching expense by ID', { error, id });
       throw error;
     }
   }

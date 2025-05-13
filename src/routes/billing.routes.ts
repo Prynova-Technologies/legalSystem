@@ -11,7 +11,8 @@ import {
   getAllTimeEntries,
   createTimeEntry,
   getAllExpenses,
-  createExpense
+  createExpense,
+  updateExpense
 } from '../controllers/billing.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { UserRole } from '../interfaces/user.interface';
@@ -57,15 +58,22 @@ router.post(
 // Get all expenses - Admin, Lawyer, Accountant
 router.get(
   '/expenses',
-  authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.ACCOUNTANT]),
+  authorize([UserRole.ADMIN, UserRole.ACCOUNTANT]),
   getAllExpenses
 );
 
 // Create expense - Admin, Lawyer, Paralegal
 router.post(
   '/expenses',
-  authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.PARALEGAL]),
+  authorize([UserRole.ADMIN, UserRole.ACCOUNTANT]),
   createExpense
+);
+
+// Update expense - Admin, Lawyer, Paralegal
+router.patch(
+  '/expenses/:id',
+  authorize([UserRole.ADMIN, UserRole.ACCOUNTANT]),
+  updateExpense
 );
 
 // Get invoice by ID
