@@ -50,10 +50,21 @@ const DataForm: React.FC<DataFormProps> = ({
     
     sections?.forEach(section => {
       section.fields.forEach(field => {
-        if (field?.type === 'date' && (initialData !== null ? initialData[field.id] === undefined || initialData[field?.id] === null : [])) {
-          data[field?.id] = new Date().toISOString().split('T')[0];
+        if (field.type === 'date') {
+          if (initialData !== null && initialData[field.id] !== undefined && initialData[field.id] !== null) {
+            // Format date string to yyyy-MM-dd if it's a date string or Date object
+            const dateValue = initialData[field.id];
+            if (dateValue instanceof Date || (typeof dateValue === 'string' && !isNaN(Date.parse(dateValue)))) {
+              data[field.id] = new Date(dateValue).toISOString().split('T')[0];
+            } else {
+              data[field.id] = dateValue;
+            }
+          } else {
+            // Default to today's date in yyyy-MM-dd format
+            data[field.id] = new Date().toISOString().split('T')[0];
+          }
         } else {
-          data[field?.id] = initialData && initialData[field?.id] !== undefined && initialData[field?.id] !== null ? initialData[field?.id] : '';
+          data[field.id] = initialData && initialData[field.id] !== undefined && initialData[field.id] !== null ? initialData[field.id] : '';
         }
       });
     });
@@ -76,11 +87,6 @@ const DataForm: React.FC<DataFormProps> = ({
         delete newErrors[fieldId];
         return newErrors;
       });
-    }
-
-    // Call custom onChange handler if provided for this field
-    if (onChange[fieldId]) {
-      onChange[fieldId](value);
     }
   };
   
@@ -181,7 +187,13 @@ const DataForm: React.FC<DataFormProps> = ({
               <input
                 type="checkbox"
                 checked={value === undefined ? !!field.defaultValue : !!value}
-                onChange={(e) => handleChange(id, e.target.checked)}
+                onChange={(e) => {
+                  handleChange(id, e.target.checked)
+
+                  if(field.onChange) {
+                    onChange(!value)
+                  }
+                }}
                 className="form-checkbox"
                 disabled={disabled}
               />
@@ -195,6 +207,7 @@ const DataForm: React.FC<DataFormProps> = ({
         return (
           <div className="form-group" key={id} id={`${id}-group`}>
             <label htmlFor={id}>{label}{required && <span className="required-mark">*</span>}</label>
+            {/* {console.log(value)} */}
             <input
               type="date"
               id={id}

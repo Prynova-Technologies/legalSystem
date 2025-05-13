@@ -208,7 +208,7 @@ export const billingService = {
   updateExpense: async (expenseId: string, expenseData: Partial<Expense>) => {
     try {
       const response = await fetch(`${API_ENDPOINTS.BILLING.EXPENSES}/${expenseId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getAuthToken()}`

@@ -103,6 +103,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   };
 
+  // Prepare initial data with properly formatted dates
+  const initialData = invoice ? {
+    ...invoice,
+    // Format date fields to yyyy-MM-dd for date inputs
+    dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : ''
+  } : undefined;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -114,7 +121,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         sections={formSections}
         onSubmit={handleSubmit}
         onCancel={onClose}
-        initialData={invoice}
+        initialData={initialData}
         submitButtonText={invoice ? 'Update' : 'Create'}
         isLoading={isSubmitting}
       />

@@ -12,6 +12,7 @@ import CalendarModal from './CalendarModal';
 import DashboardCharts from './Charts';
 import DataForm, { FormField, FormSection } from './Form';
 import FilterSection, { FilterConfig, FilterOption, FilterValues } from './FilterSection';
+import Toggle from './Toggle';
 
 export {
   Button,
@@ -28,7 +29,8 @@ export {
   CalendarModal,
   DashboardCharts,
   DataForm,
-  FilterSection
+  FilterSection,
+  Toggle
 };
 
 export type { FormField, FormSection, FilterConfig, FilterOption, FilterValues };

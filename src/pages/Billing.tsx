@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState } from '../store';
-import { fetchTimeEntries, fetchExpenses, fetchInvoices } from '../store/slices/billingSlice';
-import { Tabs, DataTable, Button, StatusBadge } from '../components/common';
+import { fetchTimeEntries, fetchExpenses, fetchInvoices, updateExpense } from '../store/slices/billingSlice';
+import { Tabs, DataTable, Button, StatusBadge, Toggle } from '../components/common';
 import * as FaIcons from 'react-icons/fa';
 import '../components/common/CommonStyles.css';
 import TimeEntryModal from '../components/billing/TimeEntryModal';
 import TimeEntryDetailsModal from '../components/billing/TimeEntryDetailsModal';
 import ExpenseModal from '../components/billing/ExpenseModal';
+import ExpenseDetailsModal from '../components/billing/ExpenseDetailsModal';
 import InvoiceModal from '../components/billing/InvoiceModal';
 
 const Billing: React.FC = () => {
@@ -16,12 +17,17 @@ const Billing: React.FC = () => {
   const { timeEntries, expenses, invoices, isLoading, error } = useSelector(
     (state: RootState) => state.billing
   );
+  const { user } = useSelector((state: RootState) => state.auth);
   const [activeTab, setActiveTab] = useState('time-entries');
   const [isTimeEntryModalOpen, setIsTimeEntryModalOpen] = useState(false);
   const [isTimeEntryDetailsModalOpen, setIsTimeEntryDetailsModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isExpenseDetailsModalOpen, setIsExpenseDetailsModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  
+  // Check if user is admin or accountant
+  const canApproveExpenses = user?.data.role === 'admin' || user?.data.role === 'accountant';
 
   useEffect(() => {
     dispatch(fetchTimeEntries() as any);
@@ -119,7 +125,7 @@ const Billing: React.FC = () => {
         <div className="detail-header">
           <h2 className="detail-title">Expenses</h2>
           <Button 
-            variant="primary" 
+            variant="outline" 
             onClick={() => setIsExpenseModalOpen(true)}
           >
             <FaIcons.FaReceipt /> New Expense
@@ -135,15 +141,35 @@ const Billing: React.FC = () => {
             { 
               header: 'Case', 
               accessor: row => (
-                row.caseId ? (
-                  <Link to={`/cases/${row.caseId}`}>View Case</Link>
+                row.case ? (
+                  <Link to={`/cases/${row.case._id}`}>Case</Link>
                 ) : 'N/A'
               )
             },
             { 
               header: 'Billable', 
               accessor: row => (
-                <StatusBadge status={row.billable ? 'Verified' : 'Unverified'} />
+                <StatusBadge status={row.billable ? 'Yes' : 'No'} />
+              )
+            },
+            { 
+              header: 'Approval Status', 
+              accessor: row => (
+                canApproveExpenses ? (
+                  <Toggle
+                    checked={row.isApproved}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      dispatch(updateExpense({
+                        expenseId: row._id,
+                        expenseData: { isApproved: e.target.checked }
+                      }) as any);
+                    }}
+                    label=""
+                  />
+                ) : (
+                  <StatusBadge status={row.isApproved ? 'Approved' : 'Not Approved'} />
+                )
               )
             },
             { 
@@ -167,7 +193,7 @@ const Billing: React.FC = () => {
           emptyMessage="No expenses recorded. Add your first expense by clicking the button above."
           onRowClick={(expense) => {
             setSelectedItem(expense);
-            setIsExpenseModalOpen(true);
+            setIsExpenseDetailsModalOpen(true);
           }}
           pagination={true}
           pageSize={10}
@@ -379,6 +405,19 @@ const Billing: React.FC = () => {
         }}
         expense={selectedItem}
         onSuccess={() => dispatch(fetchExpenses() as any)}
+      />
+      
+      <ExpenseDetailsModal
+        isOpen={isExpenseDetailsModalOpen}
+        onClose={() => {
+          setIsExpenseDetailsModalOpen(false);
+          setSelectedItem(null);
+        }}
+        expense={selectedItem}
+        onEdit={() => {
+          setIsExpenseDetailsModalOpen(false);
+          setIsExpenseModalOpen(true);
+        }}
       />
       
       <InvoiceModal
