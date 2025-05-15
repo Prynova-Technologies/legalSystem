@@ -1,6 +1,8 @@
 import Invoice from '../models/invoice.model';
 import TimeEntry from '../models/timeEntry.model';
 import Expense from '../models/expense.model';
+import Client from '../models/client.model';
+import Case from '../models/case.model';
 import { InvoiceStatus, PaymentMethod } from '../interfaces/billing.interface';
 import { ExpenseStatus } from '../interfaces/expense.interface';
 import logger from '../utils/logger';
@@ -9,6 +11,63 @@ import logger from '../utils/logger';
  * Service for billing-related operations
  */
 export class BillingService {
+  /**
+   * Get unbilled items by case ID
+   * Retrieves all billable but unbilled time entries and expenses for a specific case,
+   * along with the client data associated with the case
+   */
+  static async getUnbilledItemsByCaseId(caseId: string): Promise<any> {
+    try {
+      // Find the case and populate client data
+      const caseData = await Case.findById(caseId)
+        .populate({
+          path: 'client',
+          select: 'firstName lastName company email phone contacts address clientType'
+        });
+      
+      if (!caseData) {
+        throw new Error('Case not found');
+      }
+
+      // Get unbilled time entries for this case
+      const timeEntries = await TimeEntry.find({
+        case: caseId,
+        billable: true,
+        invoiced: false,
+        isDeleted: false
+      }).populate('user', 'firstName lastName');
+
+      // Get unbilled expenses for this case
+      const expenses = await Expense.find({
+        case: caseId,
+        billable: true,
+        invoiced: false,
+        isDeleted: false
+      }).populate('submittedBy', 'firstName lastName');
+
+      // Calculate totals
+      const timeEntriesTotal = timeEntries.reduce((sum, entry) => {
+        return sum + (entry.billableAmount || 0);
+      }, 0);
+
+      const expensesTotal = expenses.reduce((sum, expense) => {
+        return sum + (expense.billableAmount || expense.amount || 0);
+      }, 0);
+
+      return {
+        case: caseData,
+        client: caseData.client,
+        timeEntries,
+        expenses,
+        timeEntriesTotal,
+        expensesTotal,
+        subtotal: timeEntriesTotal + expensesTotal
+      };
+    } catch (error) {
+      logger.error('Error fetching unbilled items by case ID', { error, caseId });
+      throw error;
+    }
+  }
   /**
    * Get all invoices with filtering options
    */

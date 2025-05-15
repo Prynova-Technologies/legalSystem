@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import Invoice from '../models/invoice.model';
 import TimeEntry from '../models/timeEntry.model';
 import { InvoiceStatus } from '../interfaces/billing.interface';
+import { InvoiceService }  from '../services/invoice.service';
 
 // Get all invoices with filtering options
 export const getAllInvoices = async (req: Request, res: Response, next: NextFunction) => {
@@ -75,24 +76,17 @@ export const getInvoiceById = async (req: Request, res: Response, next: NextFunc
 // Create a new invoice
 export const createInvoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Generate invoice number
-    const invoiceNumber = await Invoice.generateInvoiceNumber();
-    req.body.invoiceNumber = invoiceNumber;
-    
-    // Set initial values
-    req.body.status = InvoiceStatus.DRAFT;
-    req.body.amountPaid = 0;
-    req.body.balance = req.body.total;
-    
-    const invoice = await Invoice.create(req.body);
-    
-    // If time entries are included, mark them as invoiced
-    if (req.body.timeEntryIds && Array.isArray(req.body.timeEntryIds)) {
-      await TimeEntry.updateMany(
-        { _id: { $in: req.body.timeEntryIds } },
-        { invoiced: true, invoice: invoice._id }
-      );
+    // Validate required fields
+    if (!req.body.client) {
+      return res.status(400).json({
+        success: false,
+        message: 'Client is required'
+      });
     }
+    
+    // Create the invoice using the service which handles calculations, email sending,
+    // and marking time entries and expenses as billed
+    const invoice = await InvoiceService.createInvoice(req.body);
     
     res.status(201).json({
       success: true,
@@ -106,6 +100,7 @@ export const createInvoice = async (req: Request, res: Response, next: NextFunct
 // Update an invoice
 export const updateInvoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    
     // Check if invoice exists and is not deleted
     const invoice = await Invoice.findOne({ _id: req.params.id, isDeleted: false });
     
@@ -114,11 +109,6 @@ export const updateInvoice = async (req: Request, res: Response, next: NextFunct
         success: false,
         message: 'Invoice not found'
       });
-    }
-    
-    // Don't allow updating invoiceNumber
-    if (req.body.invoiceNumber) {
-      delete req.body.invoiceNumber;
     }
     
     // Don't allow updating certain fields if invoice is already sent or paid
@@ -130,21 +120,18 @@ export const updateInvoice = async (req: Request, res: Response, next: NextFunct
       });
     }
     
-    // Update balance if total is changing
-    if (req.body.total) {
-      req.body.balance = req.body.total - invoice.amountPaid;
+    // Update the invoice using the service which handles calculations and email sending
+    const updatedInvoice = await InvoiceService.updateInvoice(req.params.id, req.body);
+    
+    if (!updatedInvoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
     }
     
-    const updatedInvoice = await Invoice.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    )
-      .populate('client', 'firstName lastName company')
-      .populate('case', 'caseNumber title');
-    
-    // Update status based on new values
-    if (updatedInvoice) {
+    // Update status based on new values if needed
+    if (updatedInvoice.updateStatus) {
       updatedInvoice.status = updatedInvoice.updateStatus();
       await updatedInvoice.save();
     }
@@ -161,7 +148,7 @@ export const updateInvoice = async (req: Request, res: Response, next: NextFunct
 // Delete an invoice (soft delete)
 export const deleteInvoice = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const invoice = await Invoice.findById(req.params.id);
+    const invoice = await InvoiceService.deleteInvoice(req.params.id);
     
     if (!invoice) {
       return res.status(404).json({
@@ -169,25 +156,6 @@ export const deleteInvoice = async (req: Request, res: Response, next: NextFunct
         message: 'Invoice not found'
       });
     }
-    
-    // Don't allow deleting invoices that have been paid
-    if (invoice.status === InvoiceStatus.PAID || invoice.status === InvoiceStatus.PARTIALLY_PAID) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot delete invoices that have been paid'
-      });
-    }
-    
-    // Soft delete by setting isDeleted flag
-    invoice.isDeleted = true;
-    invoice.status = InvoiceStatus.CANCELLED;
-    await invoice.save();
-    
-    // Update any time entries to mark them as not invoiced
-    await TimeEntry.updateMany(
-      { invoice: invoice._id },
-      { invoiced: false, $unset: { invoice: 1 } }
-    );
     
     res.status(200).json({
       success: true,
@@ -335,6 +303,31 @@ export const getInvoiceStatistics = async (req: Request, res: Response, next: Ne
 };
 
 // Generate invoice from unbilled time entries
+// Send an invoice (mark as sent and send email)
+export const sendInvoice = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Import the invoice service
+    const { InvoiceService } = await import('../services/invoice.service');
+    
+    const invoice = await InvoiceService.sendInvoice(req.params.id);
+    
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: invoice,
+      message: 'Invoice marked as sent and email notification sent to client'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const generateInvoiceFromTimeEntries = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.body.clientId) {
@@ -367,15 +360,28 @@ export const generateInvoiceFromTimeEntries = async (req: Request, res: Response
       .populate('case', 'caseNumber title')
       .populate('task', 'title');
     
-    if (timeEntries.length === 0) {
+    // Check if we have expenses to include
+    let expenses = [];
+    if (req.body.expenseIds && Array.isArray(req.body.expenseIds) && req.body.expenseIds.length > 0) {
+      const Expense = (await import('../models/expense.model')).default;
+      expenses = await Expense.find({
+        _id: { $in: req.body.expenseIds },
+        billable: true,
+        invoiced: false,
+        isDeleted: false
+      });
+    }
+    
+    // If no billable items found, return error
+    if (timeEntries.length === 0 && expenses.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No unbilled time entries found for this client'
+        message: 'No unbilled items found for this client'
       });
     }
     
     // Generate invoice items from time entries
-    const items = timeEntries.map((entry: any) => ({
+    const timeEntryItems = timeEntries.map((entry: any) => ({
       description: `${entry.description} (${entry.user.firstName} ${entry.user.lastName})`,
       quantity: entry.duration / 60, // Convert minutes to hours
       rate: entry.billingRate || 0,
@@ -384,6 +390,20 @@ export const generateInvoiceFromTimeEntries = async (req: Request, res: Response
       case: entry.case?._id,
       taxable: true
     }));
+    
+    // Generate invoice items from expenses
+    const expenseItems = expenses.map((expense: any) => ({
+      description: `Expense: ${expense.description}`,
+      quantity: 1,
+      rate: expense.billableAmount || expense.amount || 0,
+      amount: expense.billableAmount || expense.amount || 0,
+      expense: expense._id,
+      case: expense.case,
+      taxable: true
+    }));
+    
+    // Combine all items
+    const items = [...timeEntryItems, ...expenseItems];
     
     // Calculate subtotal
     const subtotal = items.reduce((sum: number, item: any) => sum + item.amount, 0);
@@ -399,7 +419,7 @@ export const generateInvoiceFromTimeEntries = async (req: Request, res: Response
     // Generate invoice number
     const invoiceNumber = await Invoice.generateInvoiceNumber();
     
-    // Create invoice
+    // Create invoice data
     const invoiceData = {
       invoiceNumber,
       client: req.body.clientId,
@@ -417,17 +437,13 @@ export const generateInvoiceFromTimeEntries = async (req: Request, res: Response
       amountPaid: 0,
       balance: total,
       notes: req.body.notes,
-      terms: req.body.terms || 'Payment due within 30 days of invoice date.'
+      terms: req.body.terms || 'Payment due within 30 days of invoice date.',
+      timeEntryIds: timeEntries.map((entry: any) => entry._id),
+      expenseIds: expenses.map((expense: any) => expense._id)
     };
     
-    const invoice = await Invoice.create(invoiceData);
-    
-    // Mark time entries as invoiced
-    const timeEntryIds = timeEntries.map((entry: any) => entry._id);
-    await TimeEntry.updateMany(
-      { _id: { $in: timeEntryIds } },
-      { invoiced: true, invoice: invoice._id }
-    );
+    // Use the invoice service to create the invoice which will handle marking items as billed
+    const invoice = await InvoiceService.createInvoice(invoiceData);
     
     res.status(201).json({
       success: true,

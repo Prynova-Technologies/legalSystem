@@ -12,7 +12,8 @@ import {
   createTimeEntry,
   getAllExpenses,
   createExpense,
-  updateExpense
+  updateExpense,
+  getUnbilledItemsByCaseId
 } from '../controllers/billing.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { UserRole } from '../interfaces/user.interface';
@@ -37,6 +38,13 @@ router.get(
   '/stats',
   authorize([UserRole.ADMIN, UserRole.ACCOUNTANT]),
   getBillingStats
+);
+
+// Get unbilled items by case ID - Admin, Lawyer, Accountant
+router.get(
+  '/unbilled-items/:caseId',
+  authorize([UserRole.ADMIN, UserRole.LAWYER, UserRole.ACCOUNTANT]),
+  getUnbilledItemsByCaseId
 );
 
 // Time entry routes

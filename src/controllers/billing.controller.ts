@@ -54,6 +54,36 @@ export const getInvoiceById = async (req: Request, res: Response): Promise<void>
 };
 
 /**
+ * Get unbilled items by case ID
+ * @route GET /api/billing/unbilled-items/:caseId
+ * @access Private - Admin, Lawyer, Accountant
+ */
+export const getUnbilledItemsByCaseId = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+    
+    const unbilledItems = await BillingService.getUnbilledItemsByCaseId(caseId);
+    
+    res.status(200).json({
+      success: true,
+      data: unbilledItems
+    });
+  } catch (error: any) {
+    if (error.message === 'Case not found') {
+      res.status(404).json({
+        success: false,
+        error: 'Case not found'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Server Error'
+      });
+    }
+  }
+};
+
+/**
  * Create new invoice
  * @route POST /api/billing
  * @access Private - Admin, Lawyer, Accountant

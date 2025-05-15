@@ -1,7 +1,8 @@
 import Invoice from '../models/invoice.model';
 import TimeEntry from '../models/timeEntry.model';
-import { InvoiceStatus } from '../interfaces/billing.interface';
+import { InvoiceStatus, PaymentMethod, IInvoicePayment } from '../interfaces/billing.interface';
 import logger from '../utils/logger';
+import emailService from '../utils/emailService';
 
 /**
  * Service for invoice-related operations
@@ -78,10 +79,26 @@ export class InvoiceService {
       const invoiceNumber = await Invoice.generateInvoiceNumber();
       invoiceData.invoiceNumber = invoiceNumber;
       
+      // Calculate subtotal from items
+      let subtotal = 0;
+      if (invoiceData.items && Array.isArray(invoiceData.items)) {
+        subtotal = invoiceData.items.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+      }
+      invoiceData.subtotal = subtotal;
+      
+      // Calculate tax amount if tax rate is provided
+      const taxRate = invoiceData.taxRate || 0;
+      const taxAmount = subtotal * (taxRate / 100);
+      invoiceData.taxAmount = taxAmount;
+      
+      // Calculate total
+      const total = subtotal + taxAmount - (invoiceData.discount || 0);
+      invoiceData.total = total;
+      
       // Set initial values
-      invoiceData.status = InvoiceStatus.DRAFT;
+      invoiceData.status = invoiceData.status || InvoiceStatus.DRAFT;
       invoiceData.amountPaid = 0;
-      invoiceData.balance = invoiceData.total;
+      invoiceData.balance = total;
       
       const invoice = await Invoice.create(invoiceData);
       
@@ -91,6 +108,21 @@ export class InvoiceService {
           { _id: { $in: invoiceData.timeEntryIds } },
           { invoiced: true, invoice: invoice._id }
         );
+      }
+      
+      // If expenses are included, mark them as invoiced
+      if (invoiceData.expenseIds && Array.isArray(invoiceData.expenseIds)) {
+        const Expense = (await import('../models/expense.model')).default;
+        const { ExpenseStatus } = await import('../interfaces/expense.interface');
+        await Expense.updateMany(
+          { _id: { $in: invoiceData.expenseIds } },
+          { invoiced: true, invoice: invoice._id, status: ExpenseStatus.BILLED }
+        );
+      }
+      
+      // If invoice status is set to SENT, send email to client
+      if (invoiceData.status === InvoiceStatus.SENT) {
+        await InvoiceService.sendInvoiceEmail(invoice._id);
       }
       
       logger.info('New invoice created', { invoiceId: invoice._id, invoiceNumber });
@@ -114,10 +146,44 @@ export class InvoiceService {
         delete updateData.invoiceNumber;
       }
       
-      // Update balance if total is changing
-      if (updateData.total) {
+      // Recalculate financial values if items are being updated
+      if (updateData.items && Array.isArray(updateData.items)) {
+        // Calculate subtotal from items
+        const subtotal = updateData.items.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+        updateData.subtotal = subtotal;
+        
+        // Calculate tax amount if tax rate is provided
+        const taxRate = updateData.taxRate !== undefined ? updateData.taxRate : (invoice.taxRate || 0);
+        const taxAmount = subtotal * (taxRate / 100);
+        updateData.taxAmount = taxAmount;
+        
+        // Calculate total
+        const discount = updateData.discount !== undefined ? updateData.discount : (invoice.discount || 0);
+        const total = subtotal + taxAmount - discount;
+        updateData.total = total;
+        
+        // Update balance
+        updateData.balance = total - (invoice.amountPaid || 0);
+      } else if (updateData.taxRate !== undefined && invoice.subtotal) {
+        // Recalculate tax amount and total if only tax rate is changing
+        const taxAmount = invoice.subtotal * (updateData.taxRate / 100);
+        updateData.taxAmount = taxAmount;
+        
+        // Calculate total
+        const discount = updateData.discount !== undefined ? updateData.discount : (invoice.discount || 0);
+        const total = invoice.subtotal + taxAmount - discount;
+        updateData.total = total;
+        
+        // Update balance
+        updateData.balance = total - (invoice.amountPaid || 0);
+      } else if (updateData.total) {
+        // Update balance if only total is changing
         updateData.balance = updateData.total - (invoice.amountPaid || 0);
       }
+      
+      // Check if status is changing from draft to sent
+      const statusChangingToSent = invoice.status === InvoiceStatus.DRAFT && 
+                                  updateData.status === InvoiceStatus.SENT;
       
       const updatedInvoice = await Invoice.findByIdAndUpdate(
         invoiceId,
@@ -126,6 +192,11 @@ export class InvoiceService {
       )
         .populate('client', 'firstName lastName company')
         .populate('case', 'caseNumber title');
+      
+      // If status is changing to sent, send email notification
+      if (statusChangingToSent && updatedInvoice) {
+        await InvoiceService.sendInvoiceEmail(invoiceId);
+      }
       
       logger.info('Invoice updated', { invoiceId });
       return updatedInvoice;
@@ -143,6 +214,9 @@ export class InvoiceService {
       const invoice = await Invoice.findById(invoiceId);
       if (!invoice) return false;
       
+      // Check if invoice is paid - we might want to handle this differently
+      const isPaid = invoice.status === InvoiceStatus.PAID;
+      
       // Soft delete by setting isDeleted flag
       invoice.isDeleted = true;
       await invoice.save();
@@ -153,7 +227,19 @@ export class InvoiceService {
         { invoiced: false, $unset: { invoice: 1 } }
       );
       
-      logger.info('Invoice deleted (soft)', { invoiceId });
+      // Unmark any expenses as invoiced
+      const Expense = (await import('../models/expense.model')).default;
+      const { ExpenseStatus } = await import('../interfaces/expense.interface');
+      
+      // If invoice was paid, we might want to mark expenses as reimbursed instead of approved
+      const newStatus = isPaid ? ExpenseStatus.REIMBURSED : ExpenseStatus.APPROVED;
+      
+      await Expense.updateMany(
+        { invoice: invoiceId },
+        { invoiced: false, status: newStatus, $unset: { invoice: 1 } }
+      );
+      
+      logger.info('Invoice deleted (soft)', { invoiceId, isPaid });
       return true;
     } catch (error) {
       logger.error('Error deleting invoice', { error, invoiceId });
@@ -170,17 +256,10 @@ export class InvoiceService {
       if (!invoice) return null;
       
       // Add payment to payments array
-      const payment: {
-        amount: number;
-        date: Date;
-        method: string;
-        reference?: string;
-        notes?: string;
-        recordedBy: string;
-      } = {
+      const payment: IInvoicePayment = {
         amount: paymentData.amount,
         date: paymentData.date || new Date(),
-        method: paymentData.method,
+        method: paymentData.method as PaymentMethod,
         reference: paymentData.reference,
         notes: paymentData.notes,
         recordedBy: paymentData.recordedBy
@@ -230,11 +309,86 @@ export class InvoiceService {
       
       await invoice.save();
       
+      // Send email notification to client
+      await InvoiceService.sendInvoiceEmail(invoiceId);
+      
       logger.info('Invoice sent', { invoiceId });
       return invoice;
     } catch (error) {
       logger.error('Error sending invoice', { error, invoiceId });
       throw error;
+    }
+  }
+
+  /**
+   * Send invoice email to client
+   */
+  static async sendInvoiceEmail(invoiceId: string): Promise<boolean> {
+    try {
+      // Get invoice with populated client information
+      const invoice = await Invoice.findOne({ _id: invoiceId, isDeleted: false })
+        .populate('client', 'firstName lastName company email clientType')
+        .populate('case', 'caseNumber title');
+      
+      if (!invoice) {
+        logger.error('Invoice not found for email sending', { invoiceId });
+        return false;
+      }
+      
+      // Get client email
+      const client = invoice.client as any;
+      if (!client || !client.email) {
+        logger.error('Client email not found for invoice', { invoiceId, clientId: client?._id });
+        return false;
+      }
+      
+      // Format client name based on client type
+      const clientName = client.clientType === 'individual' 
+        ? `${client.firstName} ${client.lastName}` 
+        : client.company;
+      
+      // Format due date
+      const dueDate = new Date(invoice.dueDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Format currency
+      const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(amount);
+      };
+      
+      // Send email using the invoiceNotification template
+      const emailSent = await emailService.sendTemplateEmail(
+        'invoiceNotification',
+        client.email,
+        {
+          clientName,
+          invoiceNumber: invoice.invoiceNumber,
+          amount: formatCurrency(invoice.total),
+          dueDate,
+          companyName: process.env.COMPANY_NAME || 'Law Firm',
+          subtotal: formatCurrency(invoice.subtotal),
+          taxAmount: formatCurrency(invoice.taxAmount || 0),
+          taxRate: invoice.taxRate || 0,
+          total: formatCurrency(invoice.total)
+        }
+      );
+      
+      if (emailSent) {
+        logger.info('Invoice email sent successfully', { invoiceId, clientEmail: client.email });
+      } else {
+        logger.error('Failed to send invoice email', { invoiceId, clientEmail: client.email });
+      }
+      
+      return emailSent;
+    } catch (error) {
+      logger.error('Error sending invoice email', { error, invoiceId });
+      return false;
     }
   }
 

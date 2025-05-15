@@ -42,19 +42,60 @@ class EmailService {
   private registerTemplates() {
     // Invoice notification template
     this.templates.invoiceNotification = {
-      subject: 'New Invoice from {{companyName}}',
+      subject: 'New Invoice #{{invoiceNumber}} from {{companyName}}',
       body: (data) => `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Invoice #${data.invoiceNumber}</h2>
-          <p>Dear ${data.clientName},</p>
-          <p>A new invoice has been generated for your account.</p>
-          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
-            <p><strong>Amount Due:</strong> ${data.amount}</p>
-            <p><strong>Due Date:</strong> ${data.dueDate}</p>
+          <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0;">INVOICE</h1>
+            <p style="margin: 5px 0 0 0;">Invoice #${data.invoiceNumber}</p>
           </div>
-          <p>Please log in to your client portal to view and pay this invoice.</p>
-          <p>Thank you for your business!</p>
-          <p>Regards,<br>${data.companyName}</p>
+          
+          <div style="padding: 20px;">
+            <p>Dear ${data.clientName},</p>
+            <p>Please find below the details of your invoice:</p>
+            
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Invoice Number:</strong></td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.invoiceNumber}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Due Date:</strong></td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.dueDate}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <h3 style="border-bottom: 2px solid #2c3e50; padding-bottom: 8px; color: #2c3e50;">Invoice Summary</h3>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <tr style="background-color: #f8f9fa;">
+                <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Subtotal:</strong></td>
+                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${data.subtotal}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Tax (${data.taxRate}%):</strong></td>
+                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${data.taxAmount}</td>
+              </tr>
+              <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td style="padding: 10px; border-bottom: 2px solid #2c3e50;"><strong>Total Amount Due:</strong></td>
+                <td style="padding: 10px; border-bottom: 2px solid #2c3e50; text-align: right; color: #2c3e50;">${data.total}</td>
+              </tr>
+            </table>
+            
+            <p>Please log in to your client portal to view the complete invoice details and make a payment.</p>
+            
+            <p>If you have any questions regarding this invoice, please don't hesitate to contact us.</p>
+            
+            <p>Thank you for your business!</p>
+            
+            <p style="margin-top: 30px;">Regards,<br>${data.companyName}</p>
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">
+            <p>This is an automated email. Please do not reply to this message.</p>
+          </div>
         </div>
       `,
     };
