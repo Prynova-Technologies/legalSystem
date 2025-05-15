@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState } from '../store';
-import { fetchTimeEntries, fetchExpenses, fetchInvoices, updateExpense } from '../store/slices/billingSlice';
-import { Tabs, DataTable, Button, StatusBadge, Toggle } from '../components/common';
+import { fetchTimeEntries, fetchExpenses, fetchInvoices, updateExpense, deleteInvoice } from '../store/slices/billingSlice';
+import { Tabs, DataTable, Button, StatusBadge, Toggle, DeleteConfirmationModal } from '../components/common';
 import * as FaIcons from 'react-icons/fa';
 import '../components/common/CommonStyles.css';
 import TimeEntryModal from '../components/billing/TimeEntryModal';
@@ -11,6 +11,7 @@ import TimeEntryDetailsModal from '../components/billing/TimeEntryDetailsModal';
 import ExpenseModal from '../components/billing/ExpenseModal';
 import ExpenseDetailsModal from '../components/billing/ExpenseDetailsModal';
 import InvoiceModal from '../components/billing/InvoiceModal';
+import InvoiceDetailsModal from '../components/billing/InvoiceDetailsModal';
 
 const Billing: React.FC = () => {
   const dispatch = useDispatch();
@@ -24,7 +25,10 @@ const Billing: React.FC = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isExpenseDetailsModalOpen, setIsExpenseDetailsModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isInvoiceDetailsModalOpen, setIsInvoiceDetailsModalOpen] = useState(false);
+  const [isDeleteConfirmationModalOpen, setIsDeleteConfirmationModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
   
   // Check if user is admin or accountant
   const canApproveExpenses = user?.data.role === 'admin' || user?.data.role === 'accountant';
@@ -209,7 +213,7 @@ const Billing: React.FC = () => {
         <div className="detail-header">
           <h2 className="detail-title">Invoices</h2>
           <Button 
-            variant="primary" 
+            variant="outline" 
             onClick={() => setIsInvoiceModalOpen(true)}
           >
             <FaIcons.FaFileInvoiceDollar /> Create Invoice
@@ -222,7 +226,7 @@ const Billing: React.FC = () => {
             { 
               header: 'Client', 
               accessor: row => (
-                <Link to={`/clients/${row.clientId}`}>View Client</Link>
+                <Link to={`/clients/${row.client._id}`}>Client</Link>
               )
             },
             { header: 'Issue Date', accessor: row => formatDate(row.issueDate) },
@@ -238,15 +242,15 @@ const Billing: React.FC = () => {
               header: 'Actions', 
               accessor: row => (
                 <Button 
-                  variant="secondary" 
+                  variant="danger" 
                   size="small"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedItem(row);
-                    setIsInvoiceModalOpen(true);
+                    setItemToDelete(row);
+                    setIsDeleteConfirmationModalOpen(true);
                   }}
                 >
-                  <FaIcons.FaEdit /> Edit
+                  <FaIcons.FaTrash /> Delete
                 </Button>
               )
             }
@@ -255,7 +259,7 @@ const Billing: React.FC = () => {
           emptyMessage="No invoices created. Generate your first invoice by clicking the button above."
           onRowClick={(invoice) => {
             setSelectedItem(invoice);
-            setIsInvoiceModalOpen(true);
+            setIsInvoiceDetailsModalOpen(true);
           }}
           pagination={true}
           pageSize={10}
@@ -428,6 +432,31 @@ const Billing: React.FC = () => {
         }}
         invoice={selectedItem}
         onSuccess={() => dispatch(fetchInvoices() as any)}
+      />
+      
+      <InvoiceDetailsModal
+        isOpen={isInvoiceDetailsModalOpen}
+        onClose={() => {
+          setIsInvoiceDetailsModalOpen(false);
+          setSelectedItem(null);
+        }}
+        invoice={selectedItem}
+      />
+      
+      <DeleteConfirmationModal
+        isOpen={isDeleteConfirmationModalOpen}
+        onClose={() => {
+          setIsDeleteConfirmationModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={() => {
+          if (itemToDelete) {
+            dispatch(deleteInvoice(itemToDelete._id) as any);
+          }
+        }}
+        title="Confirm Invoice Deletion"
+        message="Are you sure you want to delete this invoice? This action cannot be undone."
+        itemName={itemToDelete ? `Invoice #${itemToDelete.invoiceNumber}` : ''}
       />
       <div className="billing-header">
         <h1>Billing & Finance</h1>

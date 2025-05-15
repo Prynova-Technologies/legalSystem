@@ -400,4 +400,30 @@ export const billingService = {
       throw error;
     }
   },
+  
+  /**
+   * Get unbilled items for a specific case
+   * @param caseId ID of the case to get unbilled items for
+   */
+  fetchUnbilledItems: async (caseId: string) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.BILLING.UNBILLED_ITEMS}/${caseId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch unbilled items: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      console.error('Error fetching unbilled items:', error);
+      throw error;
+    }
+  }
 };

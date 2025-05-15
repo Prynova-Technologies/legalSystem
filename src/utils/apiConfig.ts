@@ -48,6 +48,7 @@ const API_ENDPOINTS = {
     TIME_ENTRIES: `${API_BASE_URL}/billing/time-entries`,
     TIME_ENTRY_DETAIL: (id: string) => `${API_BASE_URL}/billing/time-entries/${id}`,
     EXPENSES: `${API_BASE_URL}/billing/expenses`,
+    UNBILLED_ITEMS: `${API_BASE_URL}/billing/unbilled-items`,
     EXPENSE_DETAIL: (id: string) => `${API_BASE_URL}/billing/expenses/${id}`,
     INVOICES: `${API_BASE_URL}/invoices`,
     INVOICE_DETAIL: (id: string) => `${API_BASE_URL}/billing/invoices/${id}`,

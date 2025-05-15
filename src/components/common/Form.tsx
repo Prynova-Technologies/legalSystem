@@ -162,7 +162,13 @@ const DataForm: React.FC<DataFormProps> = ({
             <select
               id={id}
               value={field.multiple ? (Array.isArray(value) ? value : []) : value}
-              onChange={(e) => field.multiple ? handleMultiSelectChange(id, e) : handleChange(id, e.target.value)}
+              onChange={(e) => {
+                field.multiple ? handleMultiSelectChange(id, e) : 
+                handleChange(id, e.target.value)
+                if(field.onChange) {
+                  onChange(e.target.value)
+                }
+              }}
               className={`form-select ${error ? 'form-input-error' : ''}`}
               required={required}
               multiple={field.multiple}

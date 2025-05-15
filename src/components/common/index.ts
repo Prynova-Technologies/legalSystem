@@ -13,6 +13,7 @@ import DashboardCharts from './Charts';
 import DataForm, { FormField, FormSection } from './Form';
 import FilterSection, { FilterConfig, FilterOption, FilterValues } from './FilterSection';
 import Toggle from './Toggle';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 export {
   Button,
@@ -30,7 +31,8 @@ export {
   DashboardCharts,
   DataForm,
   FilterSection,
-  Toggle
+  Toggle,
+  DeleteConfirmationModal
 };
 
 export type { FormField, FormSection, FilterConfig, FilterOption, FilterValues };

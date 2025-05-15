@@ -6,6 +6,7 @@ interface BillingState {
   timeEntries: TimeEntry[];
   expenses: Expense[];
   invoices: Invoice[];
+  cases: any[];
   currentTimeEntry: TimeEntry | null;
   currentExpense: Expense | null;
   currentInvoice: Invoice | null;
@@ -25,6 +26,7 @@ const initialState: BillingState = {
   timeEntries: [],
   expenses: [],
   invoices: [],
+  cases: [],
   currentTimeEntry: null,
   currentExpense: null,
   currentInvoice: null,
@@ -186,6 +188,32 @@ export const markInvoiceAsPaid = createAsyncThunk(
       return updatedInvoice;
     } catch (error) {
       return rejectWithValue('Failed to mark invoice as paid');
+    }
+  }
+);
+
+// Fetch all cases
+export const fetchCases = createAsyncThunk(
+  'billing/fetchCases',
+  async (_, { rejectWithValue }) => {
+    try {
+      const cases = await billingService.fetchCases();
+      return cases;
+    } catch (error) {
+      return rejectWithValue('Failed to fetch cases');
+    }
+  }
+);
+
+// Fetch unbilled items for a specific case
+export const fetchUnbilledItems = createAsyncThunk(
+  'billing/fetchUnbilledItems',
+  async (caseId: string, { rejectWithValue }) => {
+    try {
+      const unbilledItems = await billingService.fetchUnbilledItems(caseId);
+      return unbilledItems;
+    } catch (error) {
+      return rejectWithValue('Failed to fetch unbilled items');
     }
   }
 );
@@ -408,6 +436,33 @@ const billingSlice = createSlice({
         state.currentInvoice = action.payload;
       })
       .addCase(markInvoiceAsPaid.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Cases
+      .addCase(fetchCases.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchCases.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.cases = action.payload;
+      })
+      .addCase(fetchCases.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Unbilled Items
+      .addCase(fetchUnbilledItems.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchUnbilledItems.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(fetchUnbilledItems.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
