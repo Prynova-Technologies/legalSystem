@@ -4,6 +4,7 @@ import { RootState } from '../../store';
 import { createMessage, sendMessage, createNotification } from '../../store/slices/communicationsSlice';
 import * as FaIcons from 'react-icons/fa';
 import './ChatStyles.css';
+import socketService from '../../services/socket.service';
 
 interface ChatComponentProps {
   onNewMessage?: () => void;
@@ -106,6 +107,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
     setPreviousMessageCount(currentMessageCount);
   }, [internalMessages.length, dispatch, user?.data?.id, previousMessageCount, onNewMessage, internalMessages]);
   
+  // Connect to socket.io when component mounts
+  useEffect(() => {
+    if (user?.data?.id && user?.token) {
+      // Make sure socket is initialized
+      socketService.initialize(user.data.id, user.token);
+    }
+  }, [user]);
+  
   // Request notification permission on component mount
   useEffect(() => {
     if ("Notification" in window && Notification.permission !== "denied") {
@@ -129,6 +138,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
     dispatch(createMessage(messageData) as any)
       .then((result: any) => {
         if (result.payload) {
+          // Send message through socket.io
+          socketService.sendMessage({
+            id: result.payload.id,
+            ...messageData,
+            createdAt: new Date().toISOString()
+          });
+          
           dispatch(sendMessage(result.payload.id) as any);
           if (onNewMessage) onNewMessage();
         }
@@ -141,23 +157,28 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
     setSelectedUser(userId);
     setActiveConversation(userId);
     
-    // Mark messages from this user as read
+    // Check if there are existing messages with this user
     const userMessages = conversations[userId] || [];
-    const unreadMessages = userMessages.filter(msg => 
-      msg.sender === userId && (!msg.readBy || !msg.readBy.includes(user?.data?.id || ''))
-    );
     
-    // Update readBy for each unread message
-    unreadMessages.forEach(message => {
-      const updatedReadBy = message.readBy ? [...message.readBy, user?.data?.id] : [user?.data?.id];
-      // In a real application, you would dispatch an action to update the message in the backend
-      // For now, we're just updating the local state
-      message.readBy = updatedReadBy;
-    });
-    
-    // Reset new message notification for this conversation
-    if (hasNewMessages) {
-      setHasNewMessages(false);
+    if (userMessages.length > 0) {
+      // Mark messages from this user as read
+      const unreadMessages = userMessages.filter(msg => 
+        msg.sender === userId && (!msg.readBy || !msg.readBy.includes(user?.data?.id || ''))
+      );
+      
+      // Update readBy for each unread message
+      unreadMessages.forEach(message => {
+        const updatedReadBy = message.readBy ? [...message.readBy, user?.data?.id] : [user?.data?.id];
+        // Mark as read in the backend via socket
+        socketService.markMessageAsRead(message.id);
+        // Update local state
+        message.readBy = updatedReadBy;
+      });
+      
+      // Reset new message notification for this conversation
+      if (hasNewMessages) {
+        setHasNewMessages(false);
+      }
     }
   };
 
@@ -171,20 +192,31 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Get all users except current user
+  const availableUsers = users.filter(u => u.id !== user?.data?.id);
+
   return (
     <div className="chat-container">
       <div className="chat-sidebar">
         <div className="chat-sidebar-header">
-          <h3>Conversations</h3>
+          <h3>Team Members</h3>
         </div>
         <div className="chat-users-list">
-          {sortedConversations.length > 0 ? (
-            sortedConversations.map(([userId, userMessages]) => {
-              const latestMessage = userMessages.reduce((latest, msg) => 
-                new Date(msg.createdAt) > new Date(latest.createdAt) ? msg : latest, userMessages[0]);
-              const unreadCount = userMessages.filter(msg => 
-                msg.sender !== user?.data?.id && (!msg.readBy || !msg.readBy.includes(user?.data?.id || ''))
-              ).length;
+          {availableUsers.length > 0 ? (
+            availableUsers.map((userObj) => {
+              const userId = userObj.id;
+              const hasConversation = conversations[userId];
+              const userMessages = conversations[userId] || [];
+              
+              // Only calculate these if there's an existing conversation
+              const latestMessage = hasConversation ? 
+                userMessages.reduce((latest, msg) => 
+                  new Date(msg.createdAt) > new Date(latest.createdAt) ? msg : latest, userMessages[0]) : null;
+              
+              const unreadCount = hasConversation ? 
+                userMessages.filter(msg => 
+                  msg.sender !== user?.data?.id && (!msg.readBy || !msg.readBy.includes(user?.data?.id || ''))
+                ).length : 0;
               
               return (
                 <div 
@@ -196,8 +228,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
                     <FaIcons.FaUserCircle />
                   </div>
                   <div className="chat-user-info">
-                    <div className="chat-user-name">{getUserName(userId)}</div>
-                    <div className="chat-last-message">{latestMessage.content.substring(0, 30)}{latestMessage.content.length > 30 ? '...' : ''}</div>
+                    <div className="chat-user-name">{`${userObj.firstName} ${userObj.lastName}`}</div>
+                    {latestMessage ? (
+                      <div className="chat-last-message">{latestMessage.content.substring(0, 30)}{latestMessage.content.length > 30 ? '...' : ''}</div>
+                    ) : (
+                      <div className="chat-last-message">Start a conversation</div>
+                    )}
                   </div>
                   {unreadCount > 0 && (
                     <div className="chat-unread-badge" title={`${unreadCount} unread message${unreadCount > 1 ? 's' : ''}`}>
@@ -209,7 +245,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
               );
             })
           ) : (
-            <div className="chat-empty-state">No conversations yet</div>
+            <div className="chat-empty-state">No team members available</div>
           )}
         </div>
       </div>
@@ -222,17 +258,23 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
             </div>
             
             <div className="chat-messages">
-              {conversations[activeConversation]?.sort((a, b) => 
-                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-              ).map(message => (
-                <div 
-                  key={message.id} 
-                  className={`chat-message ${message.sender === user?.data?.id ? 'sent' : 'received'}`}
-                >
-                  <div className="chat-message-content">{message.content}</div>
-                  <div className="chat-message-time">{formatTime(message.createdAt)}</div>
+              {(conversations[activeConversation] && conversations[activeConversation].length > 0) ? (
+                conversations[activeConversation].sort((a, b) => 
+                  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                ).map(message => (
+                  <div 
+                    key={message.id} 
+                    className={`chat-message ${message.sender === user?.data?.id ? 'sent' : 'received'}`}
+                  >
+                    <div className="chat-message-content">{message.content}</div>
+                    <div className="chat-message-time">{formatTime(message.createdAt)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="chat-no-messages">
+                  <p>No messages yet. Send a message to start the conversation.</p>
                 </div>
-              ))}
+              )}
               <div ref={messagesEndRef} />
             </div>
             
@@ -252,7 +294,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ onNewMessage }) => {
         ) : (
           <div className="chat-empty-state">
             <FaIcons.FaComments className="chat-empty-icon" />
-            <p>Select a conversation to start chatting</p>
+            <p>Select a team member to start chatting</p>
           </div>
         )}
       </div>

@@ -26,8 +26,26 @@ const TopBar: React.FC = () => {
       );
       
       setUnreadMessageCount(unreadMessages.length);
+      
+      // If there are unread messages, show browser notification
+      if (unreadMessages.length > 0 && "Notification" in window && Notification.permission === "granted") {
+        const latestUnread = unreadMessages.reduce((latest, msg) => 
+          new Date(msg.createdAt) > new Date(latest.createdAt) ? msg : latest, unreadMessages[0]);
+        
+        new Notification("New Chat Message", {
+          body: latestUnread.content.substring(0, 60) + (latestUnread.content.length > 60 ? '...' : ''),
+          icon: '/logo192.png'
+        });
+      }
     }
   }, [messages, user]);
+  
+  // Request notification permission
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission !== "denied") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const _handleLogout = async () => {
     try {

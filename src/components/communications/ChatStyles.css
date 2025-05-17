@@ -202,9 +202,21 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #999;
+  color: #9e9e9e;
   text-align: center;
   padding: 20px;
+}
+
+.chat-no-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #757575;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
 }
 
 .chat-empty-icon {
